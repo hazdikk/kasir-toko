@@ -5,6 +5,10 @@ export function getProducts(): Promise<Product[]> {
   return apiFetch<Product[]>("/products");
 }
 
+export function getProductCategories(): Promise<string[]> {
+  return apiFetch<string[]>("/products/categories");
+}
+
 export function createProduct(data: ProductRequest): Promise<Product> {
   return apiFetch<Product>("/products", {
     method: "POST",

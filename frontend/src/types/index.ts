@@ -2,6 +2,7 @@ export interface Product {
   id: string;
   barcode?: string;
   name: string;
+  category: string;
   purchasePrice: number;
   sellingPrice: number;
   stock: number;
@@ -10,6 +11,7 @@ export interface Product {
 export interface ProductRequest {
   barcode?: string;
   name: string;
+  category: string;
   purchasePrice: number;
   sellingPrice: number;
   stock: number;

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   getProducts,
+  getProductCategories,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -37,19 +38,27 @@ function scanFeedbackToneClass(tone: "success" | "error" | "info") {
 
 interface ProductFormProps {
   initial?: Product;
+  categories: string[];
+  categoriesError: string | null;
   onSave: (data: ProductRequest) => Promise<void>;
   onCancel: () => void;
 }
 
-function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
+function ProductForm({ initial, categories, categoriesError, onSave, onCancel }: ProductFormProps) {
   const [barcode, setBarcode] = useState(initial?.barcode ?? "");
   const [name, setName] = useState(initial?.name ?? "");
+  const [category, setCategory] = useState(initial?.category ?? "");
   const [purchasePrice, setPurchasePrice] = useState(initial?.purchasePrice.toString() ?? "");
   const [sellingPrice, setSellingPrice] = useState(initial?.sellingPrice.toString() ?? "");
   const [stock, setStock] = useState(initial?.stock.toString() ?? "");
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const normalizedCategory = category.trim().toLowerCase();
+  const categorySuggestions = categories.filter((item) =>
+    item.toLowerCase().includes(normalizedCategory),
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,6 +69,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
     const parsedStock = Number(stock);
 
     if (!name.trim()) return setError("Nama produk wajib diisi.");
+    if (!category.trim()) return setError("Kategori wajib diisi.");
     if (isNaN(parsedPurchasePrice) || parsedPurchasePrice <= 0) {
       return setError("Harga beli harus lebih dari 0.");
     }
@@ -73,6 +83,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
       await onSave({
         barcode: barcode.trim() || undefined,
         name: name.trim(),
+        category: category.trim(),
         purchasePrice: parsedPurchasePrice,
         sellingPrice: parsedSellingPrice,
         stock: parsedStock,
@@ -136,6 +147,55 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
               placeholder="Contoh: Indomie Goreng"
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Kategori</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={category}
+                onFocus={() => setShowCategorySuggestions(true)}
+                onBlur={() => {
+                  window.setTimeout(() => setShowCategorySuggestions(false), 100);
+                }}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setShowCategorySuggestions(true);
+                }}
+                placeholder="Contoh: Snack"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+              {showCategorySuggestions && categorySuggestions.length > 0 && (
+                <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-10 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-lg">
+                  {categorySuggestions.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setCategory(item);
+                        setShowCategorySuggestions(false);
+                      }}
+                      className="block min-h-11 w-full px-4 py-3 text-left text-base text-gray-700 active:bg-gray-100"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {categoriesError ? (
+              <p className="text-sm text-amber-600">{categoriesError}</p>
+            ) : categories.length > 0 ? (
+              <p className="text-sm text-gray-500">Pilih kategori yang sudah ada atau ketik kategori baru.</p>
+            ) : (
+              <p className="text-sm text-gray-500">Belum ada kategori tersimpan. Ketik kategori baru untuk produk ini.</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -386,8 +446,10 @@ type BannerTone = "success" | "error" | "info";
 
 export default function ProdukPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [productCategories, setProductCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>(null);
   const [refresh, setRefresh] = useState(0);
   const [query, setQuery] = useState("");
@@ -401,6 +463,21 @@ export default function ProdukPage() {
 
   useEffect(() => {
     let cancelled = false;
+
+    getProductCategories()
+      .then((data) => {
+        if (!cancelled) {
+          setProductCategories(data);
+          setCategoryError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setCategoryError(err instanceof Error ? err.message : "Gagal memuat daftar kategori.");
+          setProductCategories([]);
+        }
+      });
+
     getProducts()
       .then((data) => {
         if (!cancelled) {
@@ -633,6 +710,7 @@ export default function ProdukPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-medium text-gray-900">{product.name}</p>
                 <p className="text-sm text-gray-500">
+                  Kategori: {product.category} ·{" "}
                   Beli: {formatRupiah(product.purchasePrice)} · Jual: {formatRupiah(product.sellingPrice)} · Stok: {product.stock}
                   {product.barcode && <span className="text-gray-400"> · {product.barcode}</span>}
                 </p>
@@ -667,6 +745,8 @@ export default function ProdukPage() {
 
       {modal?.type === "create" && (
         <ProductForm
+          categories={productCategories}
+          categoriesError={categoryError}
           onSave={handleCreate}
           onCancel={() => setModal(null)}
         />
@@ -675,6 +755,8 @@ export default function ProdukPage() {
       {modal?.type === "edit" && (
         <ProductForm
           initial={modal.product}
+          categories={productCategories}
+          categoriesError={categoryError}
           onSave={(data) => handleEdit(modal.product, data)}
           onCancel={() => setModal(null)}
         />
