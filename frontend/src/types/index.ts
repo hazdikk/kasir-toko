@@ -15,6 +15,11 @@ export interface ProductRequest {
   stock: number;
 }
 
+export interface StockInRequest {
+  quantity: number;
+  unitPurchasePrice: number;
+}
+
 export type PaymentMethod = "CASH" | "CARD";
 
 export interface TransactionItemRequest {

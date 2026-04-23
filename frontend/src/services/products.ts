@@ -1,5 +1,5 @@
 import { apiFetch } from "./api";
-import type { Product, ProductRequest } from "@/types";
+import type { Product, ProductRequest, StockInRequest } from "@/types";
 
 export function getProducts(): Promise<Product[]> {
   return apiFetch<Product[]>("/products");
@@ -25,4 +25,11 @@ export function deleteProduct(id: string): Promise<void> {
 
 export function searchProducts(query: string): Promise<Product[]> {
   return apiFetch<Product[]>(`/products/search?q=${encodeURIComponent(query)}`);
+}
+
+export function stockInProduct(id: string, data: StockInRequest): Promise<Product> {
+  return apiFetch<Product>(`/products/${id}/stock-in`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
