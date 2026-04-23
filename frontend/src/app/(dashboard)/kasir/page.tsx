@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
-import { getProducts } from "@/services/products";
+import { getProducts, getProductByBarcode } from "@/services/products";
 import { createTransaction } from "@/services/transactions";
 import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
@@ -102,7 +102,7 @@ function CheckoutSheet({
 
   if (cart.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-white">
+      <div className="fixed inset-0 z-[60] flex flex-col bg-white">
         <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-4">
           <button
             onClick={onClose}
@@ -121,7 +121,7 @@ function CheckoutSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-white">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-4">
         <button
@@ -170,7 +170,7 @@ function CheckoutSheet({
       </div>
 
       {/* Payment */}
-      <div className="space-y-4 border-t border-gray-200 bg-white px-4 pb-6 pt-4">
+      <div className="space-y-4 border-t border-gray-200 bg-white px-4 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))] pt-4">
         <div className="flex items-center justify-between">
           <span className="text-base font-medium text-gray-700">Total</span>
           <span className="text-xl font-bold text-gray-900">{formatRupiah(total)}</span>
@@ -200,7 +200,7 @@ function CheckoutSheet({
               onChange={(e) => setAmountPaid(e.target.value)}
               placeholder="Jumlah bayar"
               inputMode="numeric"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
             {parsed >= total && parsed > 0 && (
               <div className="flex items-center justify-between rounded-xl bg-green-50 px-4 py-3">
@@ -238,7 +238,7 @@ interface ReceiptProps {
 
 function Receipt({ transaction, onClose }: ReceiptProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6">
         <div className="mb-4 text-center">
           <div className="mb-2 text-4xl">✅</div>
@@ -321,16 +321,18 @@ export default function KasirPage() {
     setRefresh((n) => n + 1);
   }
 
-  function handleScan(code: string) {
+  async function handleScan(code: string) {
     setShowScanner(false);
-    const product = products.find((p) => p.barcode === code);
-    if (!product) {
+    try {
+      const product = await getProductByBarcode(code);
+      if (product.stock === 0) {
+        setScanFeedback({ message: `${product.name} — stok habis`, isError: true });
+      } else {
+        dispatch({ type: "ADD", product });
+        setScanFeedback({ message: `${product.name} ditambahkan`, isError: false });
+      }
+    } catch {
       setScanFeedback({ message: `Produk tidak ditemukan: ${code}`, isError: true });
-    } else if (product.stock === 0) {
-      setScanFeedback({ message: `${product.name} — stok habis`, isError: true });
-    } else {
-      dispatch({ type: "ADD", product });
-      setScanFeedback({ message: `${product.name} ditambahkan`, isError: false });
     }
     setTimeout(() => setScanFeedback(null), 2500);
   }
