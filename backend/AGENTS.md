@@ -1,4 +1,4 @@
-# kasir-toko — Backend
+# kasir-toko — Backend (Codex Instructions)
 
 Spring Boot 4 · Java 21 · Maven · JPA · Spring Security
 
@@ -74,7 +74,7 @@ com.hazdik.kasirtoko/
 ## Karpathy Guidelines
 <!-- https://github.com/forrestchang/andrej-karpathy-skills -->
 
-Behavioral guidelines to reduce common LLM coding mistakes.
+Behavioral guidelines for Codex to reduce common LLM coding mistakes.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
