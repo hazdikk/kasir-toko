@@ -33,3 +33,4 @@ frontend/.env*.local
 build/
 /.claude/
 /backend/.claude/
+/frontend/.claude/

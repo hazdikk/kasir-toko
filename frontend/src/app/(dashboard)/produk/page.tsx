@@ -8,6 +8,7 @@ import {
   deleteProduct,
 } from "@/services/products";
 import { formatRupiah } from "@/lib/format";
+import BarcodeScanner from "@/components/BarcodeScanner";
 import type { Product, ProductRequest } from "@/types";
 
 // ─── Product Form Modal ───────────────────────────────────────────────────────
@@ -19,11 +20,13 @@ interface ProductFormProps {
 }
 
 function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
+  const [barcode, setBarcode] = useState(initial?.barcode ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [price, setPrice] = useState(initial?.price.toString() ?? "");
   const [stock, setStock] = useState(initial?.stock.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,7 +41,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
 
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), price: parsedPrice, stock: parsedStock });
+      await onSave({ barcode: barcode.trim() || undefined, name: name.trim(), price: parsedPrice, stock: parsedStock });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan produk.");
       setSaving(false);
@@ -53,6 +56,42 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Barcode <span className="font-normal text-gray-400">(opsional)</span></label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="Contoh: 8991234567890"
+                inputMode="numeric"
+                className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-gray-300 text-gray-600 active:bg-gray-100"
+                aria-label="Scan barcode"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" />
+                  <line x1="7" y1="8" x2="7" y2="16" strokeLinecap="round" />
+                  <line x1="10" y1="8" x2="10" y2="16" strokeLinecap="round" />
+                  <line x1="13" y1="8" x2="13" y2="16" strokeLinecap="round" />
+                  <line x1="16" y1="8" x2="16" y2="11" strokeLinecap="round" />
+                  <line x1="16" y1="13" x2="16" y2="16" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {showScanner && (
+            <BarcodeScanner
+              onScan={(code) => { setBarcode(code); setShowScanner(false); }}
+              onClose={() => setShowScanner(false)}
+            />
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">Nama</label>
             <input
@@ -264,6 +303,7 @@ export default function ProdukPage() {
                 <p className="truncate text-base font-medium text-gray-900">{product.name}</p>
                 <p className="text-sm text-gray-500">
                   {formatRupiah(product.price)} · Stok: {product.stock}
+                  {product.barcode && <span className="text-gray-400"> · {product.barcode}</span>}
                 </p>
               </div>
 
