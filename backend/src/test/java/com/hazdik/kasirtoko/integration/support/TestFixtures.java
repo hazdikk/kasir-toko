@@ -10,10 +10,16 @@ public final class TestFixtures {
   private TestFixtures() {}
 
   public static Product aProduct(
-      String barcode, String name, String purchasePrice, String sellingPrice, int stock) {
+      String barcode,
+      String name,
+      String category,
+      String purchasePrice,
+      String sellingPrice,
+      int stock) {
     Product product = new Product();
     product.setBarcode(barcode);
     product.setName(name);
+    product.setCategory(category);
     product.setPurchasePrice(new BigDecimal(purchasePrice));
     product.setSellingPrice(new BigDecimal(sellingPrice));
     product.setStock(stock);
@@ -21,10 +27,16 @@ public final class TestFixtures {
   }
 
   public static Map<String, Object> aProductRequest(
-      String barcode, String name, String purchasePrice, String sellingPrice, int stock) {
+      String barcode,
+      String name,
+      String category,
+      String purchasePrice,
+      String sellingPrice,
+      int stock) {
     return Map.of(
         "barcode", barcode,
         "name", name,
+        "category", category,
         "purchasePrice", new BigDecimal(purchasePrice),
         "sellingPrice", new BigDecimal(sellingPrice),
         "stock", stock);

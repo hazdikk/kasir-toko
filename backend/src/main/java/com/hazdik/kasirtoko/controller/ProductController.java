@@ -27,6 +27,11 @@ public class ProductController {
     return productService.findProductsByQuery(q);
   }
 
+  @GetMapping("/categories")
+  public List<String> getCategories() {
+    return productService.findAllCategories();
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public ProductResponse createProduct(@Valid @RequestBody ProductRequest request) {

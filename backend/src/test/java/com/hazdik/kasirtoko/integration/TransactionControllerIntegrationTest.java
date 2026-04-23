@@ -19,7 +19,8 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void createTransaction_validItems_returnsCreatedTransaction() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-2001", "Minyak", "12000", "15000", 20));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-2001", "Minyak", "Sembako", "12000", "15000", 20));
     Map<String, Object> request =
         TestFixtures.aTransactionRequest(product.getId(), 2, "CASH", "40000");
 
@@ -40,7 +41,8 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void findTransactionById_existingTransaction_returnsTransaction() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-2002", "Sabun", "3000", "5000", 50));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-2002", "Sabun", "Perawatan", "3000", "5000", 50));
     Map<String, Object> created =
         postApi(
             "/transactions",
@@ -59,9 +61,11 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void findAllTransactions_existingTransactions_returnsTransactionList() throws Exception {
     Product firstProduct =
-        productRepository.save(TestFixtures.aProduct("SKU-2003", "Gula", "10000", "13000", 25));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-2003", "Gula", "Sembako", "10000", "13000", 25));
     Product secondProduct =
-        productRepository.save(TestFixtures.aProduct("SKU-2004", "Beras", "50000", "62000", 10));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-2004", "Beras", "Sembako", "50000", "62000", 10));
 
     postApi(
         "/transactions",

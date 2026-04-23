@@ -7,6 +7,7 @@ public record ProductResponse(
     String id,
     String barcode,
     String name,
+    String category,
     BigDecimal purchasePrice,
     BigDecimal sellingPrice,
     int stock) {
@@ -16,6 +17,7 @@ public record ProductResponse(
         product.getId(),
         product.getBarcode(),
         product.getName(),
+        product.getCategory(),
         product.getPurchasePrice(),
         product.getSellingPrice(),
         product.getStock());

@@ -23,21 +23,24 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   @Test
   void findAllProducts_existingProducts_returnsProductList() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1001", "Kopi", "5000", "7000", 10));
+    productRepository.save(TestFixtures.aProduct("SKU-1001", "Kopi", "Minuman", "5000", "7000", 10));
 
     List<Map<String, Object>> response = getApi("/products", new TypeReference<>() {});
 
     assertThat(response).hasSize(1);
     assertThat(response.getFirst().get("barcode")).isEqualTo("SKU-1001");
     assertThat(response.getFirst().get("name")).isEqualTo("Kopi");
+    assertThat(response.getFirst().get("category")).isEqualTo("Minuman");
     assertThat(decimalOf(response.getFirst().get("purchasePrice"))).isEqualByComparingTo("5000");
     assertThat(decimalOf(response.getFirst().get("sellingPrice"))).isEqualByComparingTo("7000");
   }
 
   @Test
   void searchProducts_matchingName_returnsFilteredProducts() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1002", "Teh Botol", "3000", "4500", 8));
-    productRepository.save(TestFixtures.aProduct("SKU-1003", "Susu", "7000", "10000", 5));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1002", "Teh Botol", "Minuman", "3000", "4500", 8));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1003", "Susu", "Minuman", "7000", "10000", 5));
 
     List<Map<String, Object>> response =
         getApi("/products/search?q=teh", new TypeReference<>() {});
@@ -49,9 +52,12 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   @Test
   void searchProducts_partialBarcode_returnsMatchedProducts() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1008", "Kerupuk", "2000", "3500", 11));
-    productRepository.save(TestFixtures.aProduct("SKU-1009", "Keripik", "2500", "4000", 7));
-    productRepository.save(TestFixtures.aProduct("ABC-2001", "Rengginang", "3000", "4500", 5));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1008", "Kerupuk", "Snack", "2000", "3500", 11));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1009", "Keripik", "Snack", "2500", "4000", 7));
+    productRepository.save(
+        TestFixtures.aProduct("ABC-2001", "Rengginang", "Snack", "3000", "4500", 5));
 
     List<Map<String, Object>> response =
         getApi("/products/search?q=SKU-100", new TypeReference<>() {});
@@ -63,7 +69,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void searchProducts_nameAndBarcodeMatchSameProduct_returnsUniqueProduct() throws Exception {
     productRepository.save(
-        TestFixtures.aProduct("SKU-1010", "Paket SKU-1010", "8000", "11000", 4));
+        TestFixtures.aProduct("SKU-1010", "Paket SKU-1010", "Paket", "8000", "11000", 4));
 
     List<Map<String, Object>> response =
         getApi("/products/search?q=SKU-1010", new TypeReference<>() {});
@@ -81,7 +87,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void createProduct_validRequest_returnsCreatedProduct() throws Exception {
     Map<String, Object> request =
-        TestFixtures.aProductRequest("SKU-1005", "Biskuit", "3500", "5500", 15);
+        TestFixtures.aProductRequest("SKU-1005", "Biskuit", "Snack", "3500", "5500", 15);
 
     Map<String, Object> response =
         postApi("/products", request, 201, new TypeReference<>() {});
@@ -89,32 +95,67 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     assertThat(response.get("id")).isNotNull();
     assertThat(response.get("barcode")).isEqualTo("SKU-1005");
     assertThat(response.get("name")).isEqualTo("Biskuit");
+    assertThat(response.get("category")).isEqualTo("SNACK");
     assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("3500");
     assertThat(decimalOf(response.get("sellingPrice"))).isEqualByComparingTo("5500");
     assertThat(response.get("stock")).isEqualTo(15);
   }
 
   @Test
+  void createProduct_existingCategoryDifferentCase_returnsUppercaseCategory() throws Exception {
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1017", "Es Teh", "Minuman", "2000", "4000", 10));
+
+    Map<String, Object> response =
+        postApi(
+            "/products",
+            TestFixtures.aProductRequest("SKU-1018", "Jus Jeruk", "mINUMAN", "6000", "9000", 8),
+            201,
+            new TypeReference<>() {});
+
+    assertThat(response.get("category")).isEqualTo("MINUMAN");
+  }
+
+  @Test
   void updateProduct_existingProduct_returnsUpdatedProduct() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1006", "Permen", "1000", "2000", 20));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1006", "Permen", "Permen", "1000", "2000", 20));
     Map<String, Object> request =
-        TestFixtures.aProductRequest("SKU-1006", "Permen Mint", "1200", "2500", 18);
+        TestFixtures.aProductRequest("SKU-1006", "Permen Mint", "Candy", "1200", "2500", 18);
 
     Map<String, Object> response =
         putApi("/products/" + product.getId(), request, new TypeReference<>() {});
 
     assertThat(response.get("id")).isEqualTo(product.getId());
     assertThat(response.get("name")).isEqualTo("Permen Mint");
+    assertThat(response.get("category")).isEqualTo("CANDY");
     assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("1200");
     assertThat(decimalOf(response.get("sellingPrice"))).isEqualByComparingTo("2500");
     assertThat(response.get("stock")).isEqualTo(18);
   }
 
   @Test
+  void updateProduct_existingCategoryDifferentCase_returnsUppercaseCategory() throws Exception {
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1019", "Cokelat", "Snack", "3000", "5000", 12));
+    Product product =
+        productRepository.save(TestFixtures.aProduct("SKU-1020", "Roti", "Bakery", "4000", "6500", 6));
+
+    Map<String, Object> response =
+        putApi(
+            "/products/" + product.getId(),
+            TestFixtures.aProductRequest("SKU-1020", "Roti Cokelat", "sNack", "4200", "6800", 7),
+            new TypeReference<>() {});
+
+    assertThat(response.get("category")).isEqualTo("SNACK");
+  }
+
+  @Test
   void deleteProduct_existingProduct_removesProductFromDatabase() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1007", "Mie Instan", "2500", "3500", 30));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1007", "Mie Instan", "Makanan", "2500", "3500", 30));
 
     deleteApi("/products/" + product.getId(), 204);
 
@@ -124,7 +165,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void stockIn_validRequest_updatesStockAndWeightedPurchasePrice() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1011", "Sarden", "10000", "14000", 10));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1011", "Sarden", "Makanan", "10000", "14000", 10));
     Map<String, Object> request = TestFixtures.aStockInRequest(5, "13000");
 
     Map<String, Object> response =
@@ -149,7 +191,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void stockIn_invalidQuantity_returns400() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1012", "Kecap", "8000", "10000", 7));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1012", "Kecap", "Bumbu", "8000", "10000", 7));
     Map<String, Object> request = TestFixtures.aStockInRequest(0, "9000");
 
     Map<String, Object> response =
@@ -163,7 +206,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void stockIn_invalidUnitPurchasePrice_returns400() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1013", "Garam", "3000", "5000", 12));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1013", "Garam", "Bumbu", "3000", "5000", 12));
     Map<String, Object> request = TestFixtures.aStockInRequest(2, "0");
 
     Map<String, Object> response =
@@ -177,7 +221,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void stockIn_zeroExistingStock_setsPurchasePriceToIncomingPrice() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1014", "Kornet", "9000", "12000", 0));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1014", "Kornet", "Makanan", "9000", "12000", 0));
     Map<String, Object> request = TestFixtures.aStockInRequest(4, "7500");
 
     Map<String, Object> response =
@@ -190,7 +235,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void stockIn_validRequest_persistsStockHistoryRecord() throws Exception {
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1015", "Wafer", "6000", "9000", 3));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1015", "Wafer", "Snack", "6000", "9000", 3));
     Map<String, Object> request = TestFixtures.aStockInRequest(6, "7000");
 
     postApi("/products/" + product.getId() + "/stock-in", request, 200, new TypeReference<>() {});
@@ -207,7 +253,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   @Test
   void stockIn_searchResultProductId_canBeUsedForStockIn() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1016", "Sosis", "4000", "6500", 5));
+    productRepository.save(TestFixtures.aProduct("SKU-1016", "Sosis", "Makanan", "4000", "6500", 5));
 
     List<Map<String, Object>> searchResponse =
         getApi("/products/search?q=SKU-1016", new TypeReference<>() {});
@@ -224,6 +270,17 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
     assertThat(stockInResponse.get("id")).isEqualTo(productId);
     assertThat(stockInResponse.get("stock")).isEqualTo(8);
+  }
+
+  @Test
+  void getCategories_existingProducts_returnsDistinctSortedCategories() throws Exception {
+    productRepository.save(TestFixtures.aProduct("SKU-1021", "Susu UHT", "Minuman", "7000", "9000", 20));
+    productRepository.save(TestFixtures.aProduct("SKU-1022", "Teh", "mINUMAN", "3000", "5000", 30));
+    productRepository.save(TestFixtures.aProduct("SKU-1023", "Keripik", "Snack", "4000", "6000", 16));
+
+    List<String> response = getApi("/products/categories", new TypeReference<>() {});
+
+    assertThat(response).containsExactly("MINUMAN", "SNACK");
   }
 
   private BigDecimal decimalOf(Object value) {

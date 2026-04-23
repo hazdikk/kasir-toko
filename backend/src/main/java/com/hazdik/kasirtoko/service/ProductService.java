@@ -10,8 +10,11 @@ import com.hazdik.kasirtoko.repository.ProductRepository;
 import com.hazdik.kasirtoko.repository.StockMovementRepository;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,11 +44,23 @@ public class ProductService {
     return productRepository.findAll().stream().map(ProductResponse::from).toList();
   }
 
+  public List<String> findAllCategories() {
+    TreeSet<String> categories = new TreeSet<>();
+    for (String category : productRepository.findAllCategories()) {
+      String normalizedCategory = normalizeCategory(category);
+      if (!normalizedCategory.isEmpty()) {
+        categories.add(normalizedCategory);
+      }
+    }
+    return new ArrayList<>(categories);
+  }
+
   @Transactional
   public ProductResponse createProduct(ProductRequest request) {
     Product product = new Product();
     product.setBarcode(request.barcode());
     product.setName(request.name());
+    product.setCategory(normalizeCategory(request.category()));
     product.setPurchasePrice(request.purchasePrice());
     product.setSellingPrice(request.sellingPrice());
     product.setStock(request.stock());
@@ -58,6 +73,7 @@ public class ProductService {
         productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
     product.setBarcode(request.barcode());
     product.setName(request.name());
+    product.setCategory(normalizeCategory(request.category()));
     product.setPurchasePrice(request.purchasePrice());
     product.setSellingPrice(request.sellingPrice());
     product.setStock(request.stock());
@@ -115,5 +131,9 @@ public class ProductService {
     return currentStockValue
         .add(incomingStockValue)
         .divide(BigDecimal.valueOf(totalStock), MathContext.DECIMAL64);
+  }
+
+  private String normalizeCategory(String category) {
+    return category.trim().toUpperCase(Locale.ROOT);
   }
 }
