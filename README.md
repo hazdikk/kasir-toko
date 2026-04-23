@@ -22,7 +22,7 @@ The workflow:
   docker network create proxy_net
   ```
 - Reverse proxy configured to route:
-  - `/` to frontend container port `3000`
+  - `/` to frontend container port `3010` (host) / `3000` (container)
   - `/api/*` to backend container port `8080` (internal only, no public backend port)
 
 ### Required env file
