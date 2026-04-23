@@ -37,4 +37,8 @@ public final class TestFixtures {
         "paymentMethod", paymentMethod,
         "amountPaid", new BigDecimal(amountPaid));
   }
+
+  public static Map<String, Object> aStockInRequest(int quantity, String unitPurchasePrice) {
+    return Map.of("quantity", quantity, "unitPurchasePrice", new BigDecimal(unitPurchasePrice));
+  }
 }

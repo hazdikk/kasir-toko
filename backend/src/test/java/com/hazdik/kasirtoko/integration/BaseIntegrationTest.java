@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hazdik.kasirtoko.repository.ProductRepository;
+import com.hazdik.kasirtoko.repository.StockMovementRepository;
 import com.hazdik.kasirtoko.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ public abstract class BaseIntegrationTest {
 
   @Autowired protected MockMvc mockMvc;
   @Autowired private ProductRepository productRepository;
+  @Autowired private StockMovementRepository stockMovementRepository;
   @Autowired private TransactionRepository transactionRepository;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -34,6 +36,7 @@ public abstract class BaseIntegrationTest {
   @BeforeEach
   void cleanDatabase() {
     transactionRepository.deleteAll();
+    stockMovementRepository.deleteAll();
     productRepository.deleteAll();
   }
 

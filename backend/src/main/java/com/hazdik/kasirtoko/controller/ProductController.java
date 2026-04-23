@@ -2,9 +2,10 @@ package com.hazdik.kasirtoko.controller;
 
 import com.hazdik.kasirtoko.model.dto.ProductRequest;
 import com.hazdik.kasirtoko.model.dto.ProductResponse;
+import com.hazdik.kasirtoko.model.dto.StockInRequest;
 import com.hazdik.kasirtoko.service.ProductService;
-import java.util.List;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,12 @@ public class ProductController {
   public ProductResponse updateProduct(
       @PathVariable String id, @Valid @RequestBody ProductRequest request) {
     return productService.updateProduct(id, request);
+  }
+
+  @PostMapping("/{id}/stock-in")
+  public ProductResponse stockInProduct(
+      @PathVariable String id, @Valid @RequestBody StockInRequest request) {
+    return productService.stockInProduct(id, request);
   }
 
   @DeleteMapping("/{id}")
