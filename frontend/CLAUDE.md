@@ -2,6 +2,9 @@
 
 Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · App Router
 
+> Sync note: `AGENTS.md` is generated from this file via `npm run sync:agent-docs`.
+> After editing this file, run the sync command to keep both in sync.
+
 > **Note:** This is Next.js 16 with React 19 — APIs and conventions may differ
 > from earlier versions. Check `node_modules/next/dist/docs/` before using
 > unfamiliar APIs.
