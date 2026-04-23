@@ -14,6 +14,25 @@ import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import type { Product, ProductRequest, StockInRequest } from "@/types";
 
+function ScanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" />
+      <line x1="7" y1="8" x2="7" y2="16" strokeLinecap="round" />
+      <line x1="10" y1="8" x2="10" y2="16" strokeLinecap="round" />
+      <line x1="13" y1="8" x2="13" y2="16" strokeLinecap="round" />
+      <line x1="16" y1="8" x2="16" y2="11" strokeLinecap="round" />
+      <line x1="16" y1="13" x2="16" y2="16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function scanFeedbackToneClass(tone: "success" | "error" | "info") {
+  if (tone === "success") return "bg-green-600";
+  if (tone === "error") return "bg-red-500";
+  return "bg-blue-600";
+}
+
 // ─── Product Form Modal ───────────────────────────────────────────────────────
 
 interface ProductFormProps {
@@ -96,14 +115,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
                 className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-gray-300 text-gray-600 active:bg-gray-100"
                 aria-label="Scan barcode"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" />
-                  <line x1="7" y1="8" x2="7" y2="16" strokeLinecap="round" />
-                  <line x1="10" y1="8" x2="10" y2="16" strokeLinecap="round" />
-                  <line x1="13" y1="8" x2="13" y2="16" strokeLinecap="round" />
-                  <line x1="16" y1="8" x2="16" y2="11" strokeLinecap="round" />
-                  <line x1="16" y1="13" x2="16" y2="16" strokeLinecap="round" />
-                </svg>
+                <ScanIcon />
               </button>
             </div>
           </div>
@@ -297,7 +309,7 @@ function StockInForm({ product, onSave, onCancel }: StockInFormProps) {
       role="presentation"
     >
       <div
-        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-t-2xl bg-white p-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))]"
+        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-t-2xl bg-white p-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-2 text-lg font-semibold text-gray-900">Tambah Stok</h2>
@@ -472,6 +484,15 @@ export default function ProdukPage() {
     setTimeout(() => setScanFeedback(null), 3000);
   }
 
+  function mergeUpdatedProduct(updatedProduct: Product) {
+    setProducts((prev) =>
+      prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
+    );
+    setSearchResults((prev) =>
+      prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
+    );
+  }
+
   async function handleCreate(data: ProductRequest) {
     await createProduct(data);
     setModal(null);
@@ -508,12 +529,7 @@ export default function ProdukPage() {
   async function handleStockIn(product: Product, data: StockInRequest) {
     try {
       const updatedProduct = await stockInProduct(product.id, data);
-      setProducts((prev) =>
-        prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
-      );
-      setSearchResults((prev) =>
-        prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
-      );
+      mergeUpdatedProduct(updatedProduct);
       setModal(null);
       showScanFeedback("success", `Stok ${updatedProduct.name} berhasil ditambahkan.`);
       refetch();
@@ -559,14 +575,7 @@ export default function ProdukPage() {
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-300 text-gray-600 active:bg-gray-100"
             aria-label="Scan barcode"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" />
-              <line x1="7" y1="8" x2="7" y2="16" strokeLinecap="round" />
-              <line x1="10" y1="8" x2="10" y2="16" strokeLinecap="round" />
-              <line x1="13" y1="8" x2="13" y2="16" strokeLinecap="round" />
-              <line x1="16" y1="8" x2="16" y2="11" strokeLinecap="round" />
-              <line x1="16" y1="13" x2="16" y2="16" strokeLinecap="round" />
-            </svg>
+            <ScanIcon />
           </button>
           <button
             onClick={() => setModal({ type: "create" })}
@@ -583,13 +592,7 @@ export default function ProdukPage() {
 
       {scanFeedback && (
         <div
-          className={`px-4 py-3 text-sm font-medium text-white ${
-            scanFeedback.tone === "success"
-              ? "bg-green-600"
-              : scanFeedback.tone === "error"
-                ? "bg-red-500"
-                : "bg-blue-600"
-          }`}
+          className={`px-4 py-3 text-sm font-medium text-white ${scanFeedbackToneClass(scanFeedback.tone)}`}
         >
           {scanFeedback.message}
         </div>
