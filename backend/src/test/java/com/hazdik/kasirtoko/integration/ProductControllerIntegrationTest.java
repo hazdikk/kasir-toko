@@ -8,8 +8,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.hazdik.kasirtoko.integration.support.TestFixtures;
 import com.hazdik.kasirtoko.model.entity.Product;
 import com.hazdik.kasirtoko.model.entity.StockMovement;
+import com.hazdik.kasirtoko.model.entity.Supplier;
 import com.hazdik.kasirtoko.repository.ProductRepository;
 import com.hazdik.kasirtoko.repository.StockMovementRepository;
+import com.hazdik.kasirtoko.repository.SupplierRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +22,12 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   @Autowired private ProductRepository productRepository;
   @Autowired private StockMovementRepository stockMovementRepository;
+  @Autowired private SupplierRepository supplierRepository;
 
   @Test
   void findAllProducts_existingProducts_returnsProductList() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1001", "Kopi", "Minuman", "5000", "7000", 10));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1001", "Kopi", "Minuman", "5000", "7000", 10));
 
     List<Map<String, Object>> response = getApi("/products", new TypeReference<>() {});
 
@@ -42,8 +46,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     productRepository.save(
         TestFixtures.aProduct("SKU-1003", "Susu", "Minuman", "7000", "10000", 5));
 
-    List<Map<String, Object>> response =
-        getApi("/products/search?q=teh", new TypeReference<>() {});
+    List<Map<String, Object>> response = getApi("/products/search?q=teh", new TypeReference<>() {});
 
     assertThat(response).hasSize(1);
     assertThat(response.getFirst().get("barcode")).isEqualTo("SKU-1002");
@@ -63,7 +66,9 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
         getApi("/products/search?q=SKU-100", new TypeReference<>() {});
 
     assertThat(response).hasSize(2);
-    assertThat(response).extracting(item -> item.get("barcode")).containsExactlyInAnyOrder("SKU-1008", "SKU-1009");
+    assertThat(response)
+        .extracting(item -> item.get("barcode"))
+        .containsExactlyInAnyOrder("SKU-1008", "SKU-1009");
   }
 
   @Test
@@ -89,8 +94,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Map<String, Object> request =
         TestFixtures.aProductRequest("SKU-1005", "Biskuit", "Snack", "3500", "5500", 15);
 
-    Map<String, Object> response =
-        postApi("/products", request, 201, new TypeReference<>() {});
+    Map<String, Object> response = postApi("/products", request, 201, new TypeReference<>() {});
 
     assertThat(response.get("id")).isNotNull();
     assertThat(response.get("barcode")).isEqualTo("SKU-1005");
@@ -140,7 +144,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     productRepository.save(
         TestFixtures.aProduct("SKU-1019", "Cokelat", "Snack", "3000", "5000", 12));
     Product product =
-        productRepository.save(TestFixtures.aProduct("SKU-1020", "Roti", "Bakery", "4000", "6500", 6));
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1020", "Roti", "Bakery", "4000", "6500", 6));
 
     Map<String, Object> response =
         putApi(
@@ -167,10 +172,12 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Product product =
         productRepository.save(
             TestFixtures.aProduct("SKU-1011", "Sarden", "Makanan", "10000", "14000", 10));
-    Map<String, Object> request = TestFixtures.aStockInRequest(5, "13000");
+    Supplier supplier = saveSupplier();
+    Map<String, Object> request = TestFixtures.aStockInRequest(5, "13000", supplier.getId());
 
     Map<String, Object> response =
-        postApi("/products/" + product.getId() + "/stock-in", request, 200, new TypeReference<>() {});
+        postApi(
+            "/products/" + product.getId() + "/stock-in", request, 200, new TypeReference<>() {});
 
     assertThat(response.get("id")).isEqualTo(product.getId());
     assertThat(response.get("stock")).isEqualTo(15);
@@ -180,7 +187,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   @Test
   void stockIn_productNotFound_returns404() throws Exception {
-    Map<String, Object> request = TestFixtures.aStockInRequest(5, "13000");
+    Supplier supplier = saveSupplier();
+    Map<String, Object> request = TestFixtures.aStockInRequest(5, "13000", supplier.getId());
 
     Map<String, Object> response =
         postApi("/products/missing-id/stock-in", request, 404, new TypeReference<>() {});
@@ -193,10 +201,12 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Product product =
         productRepository.save(
             TestFixtures.aProduct("SKU-1012", "Kecap", "Bumbu", "8000", "10000", 7));
-    Map<String, Object> request = TestFixtures.aStockInRequest(0, "9000");
+    Supplier supplier = saveSupplier();
+    Map<String, Object> request = TestFixtures.aStockInRequest(0, "9000", supplier.getId());
 
     Map<String, Object> response =
-        postApi("/products/" + product.getId() + "/stock-in", request, 400, new TypeReference<>() {});
+        postApi(
+            "/products/" + product.getId() + "/stock-in", request, 400, new TypeReference<>() {});
 
     @SuppressWarnings("unchecked")
     Map<String, Object> errors = (Map<String, Object>) response.get("errors");
@@ -208,10 +218,12 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Product product =
         productRepository.save(
             TestFixtures.aProduct("SKU-1013", "Garam", "Bumbu", "3000", "5000", 12));
-    Map<String, Object> request = TestFixtures.aStockInRequest(2, "0");
+    Supplier supplier = saveSupplier();
+    Map<String, Object> request = TestFixtures.aStockInRequest(2, "0", supplier.getId());
 
     Map<String, Object> response =
-        postApi("/products/" + product.getId() + "/stock-in", request, 400, new TypeReference<>() {});
+        postApi(
+            "/products/" + product.getId() + "/stock-in", request, 400, new TypeReference<>() {});
 
     @SuppressWarnings("unchecked")
     Map<String, Object> errors = (Map<String, Object>) response.get("errors");
@@ -223,10 +235,12 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Product product =
         productRepository.save(
             TestFixtures.aProduct("SKU-1014", "Kornet", "Makanan", "9000", "12000", 0));
-    Map<String, Object> request = TestFixtures.aStockInRequest(4, "7500");
+    Supplier supplier = saveSupplier();
+    Map<String, Object> request = TestFixtures.aStockInRequest(4, "7500", supplier.getId());
 
     Map<String, Object> response =
-        postApi("/products/" + product.getId() + "/stock-in", request, 200, new TypeReference<>() {});
+        postApi(
+            "/products/" + product.getId() + "/stock-in", request, 200, new TypeReference<>() {});
 
     assertThat(response.get("stock")).isEqualTo(4);
     assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("7500");
@@ -237,7 +251,8 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Product product =
         productRepository.save(
             TestFixtures.aProduct("SKU-1015", "Wafer", "Snack", "6000", "9000", 3));
-    Map<String, Object> request = TestFixtures.aStockInRequest(6, "7000");
+    Supplier supplier = saveSupplier();
+    Map<String, Object> request = TestFixtures.aStockInRequest(6, "7000", supplier.getId());
 
     postApi("/products/" + product.getId() + "/stock-in", request, 200, new TypeReference<>() {});
 
@@ -245,6 +260,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     assertThat(stockMovements).hasSize(1);
     StockMovement stockMovement = stockMovements.getFirst();
     assertThat(stockMovement.getProduct().getId()).isEqualTo(product.getId());
+    assertThat(stockMovement.getSupplier().getId()).isEqualTo(supplier.getId());
     assertThat(stockMovement.getQuantity()).isEqualTo(6);
     assertThat(stockMovement.getUnitPurchasePrice()).isEqualByComparingTo("7000");
     assertThat(stockMovement.getStockBefore()).isEqualTo(3);
@@ -252,19 +268,51 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   }
 
   @Test
+  void stockIn_supplierNotFound_returns404() throws Exception {
+    Product product =
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1024", "Tepung", "Bahan", "5000", "7000", 9));
+    Map<String, Object> request = TestFixtures.aStockInRequest(2, "5500", "missing-supplier-id");
+
+    Map<String, Object> response =
+        postApi(
+            "/products/" + product.getId() + "/stock-in", request, 404, new TypeReference<>() {});
+
+    assertThat(response.get("detail")).isEqualTo("Supplier not found: missing-supplier-id");
+  }
+
+  @Test
+  void stockIn_blankSupplierId_returns400() throws Exception {
+    Product product =
+        productRepository.save(
+            TestFixtures.aProduct("SKU-1025", "Saus", "Bumbu", "7000", "10000", 6));
+    Map<String, Object> request = TestFixtures.aStockInRequest(2, "7500", "");
+
+    Map<String, Object> response =
+        postApi(
+            "/products/" + product.getId() + "/stock-in", request, 400, new TypeReference<>() {});
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> errors = (Map<String, Object>) response.get("errors");
+    assertThat(errors.get("supplierId")).isEqualTo("must not be blank");
+  }
+
+  @Test
   void stockIn_searchResultProductId_canBeUsedForStockIn() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1016", "Sosis", "Makanan", "4000", "6500", 5));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1016", "Sosis", "Makanan", "4000", "6500", 5));
 
     List<Map<String, Object>> searchResponse =
         getApi("/products/search?q=SKU-1016", new TypeReference<>() {});
 
     assertThat(searchResponse).hasSize(1);
     String productId = searchResponse.getFirst().get("id").toString();
+    Supplier supplier = saveSupplier();
 
     Map<String, Object> stockInResponse =
         postApi(
             "/products/" + productId + "/stock-in",
-            TestFixtures.aStockInRequest(3, "5000"),
+            TestFixtures.aStockInRequest(3, "5000", supplier.getId()),
             200,
             new TypeReference<>() {});
 
@@ -274,9 +322,11 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   @Test
   void getCategories_existingProducts_returnsDistinctSortedCategories() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1021", "Susu UHT", "Minuman", "7000", "9000", 20));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1021", "Susu UHT", "Minuman", "7000", "9000", 20));
     productRepository.save(TestFixtures.aProduct("SKU-1022", "Teh", "mINUMAN", "3000", "5000", 30));
-    productRepository.save(TestFixtures.aProduct("SKU-1023", "Keripik", "Snack", "4000", "6000", 16));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1023", "Keripik", "Snack", "4000", "6000", 16));
 
     List<String> response = getApi("/products/categories", new TypeReference<>() {});
 
@@ -285,5 +335,10 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   private BigDecimal decimalOf(Object value) {
     return new BigDecimal(value.toString());
+  }
+
+  private Supplier saveSupplier() {
+    return supplierRepository.save(
+        TestFixtures.aSupplier("PT Sumber Makmur", "Budi Santoso", "08123456789"));
   }
 }

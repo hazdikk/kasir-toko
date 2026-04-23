@@ -22,6 +22,10 @@ public class StockMovement extends BaseEntity {
   @JoinColumn(name = "product_id", nullable = false)
   private Product product;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "supplier_id")
+  private Supplier supplier;
+
   @Column(nullable = false)
   private int quantity;
 

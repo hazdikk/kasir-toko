@@ -1,13 +1,16 @@
 package com.hazdik.kasirtoko.service;
 
 import com.hazdik.kasirtoko.exception.ProductNotFoundException;
+import com.hazdik.kasirtoko.exception.SupplierNotFoundException;
 import com.hazdik.kasirtoko.model.dto.ProductRequest;
 import com.hazdik.kasirtoko.model.dto.ProductResponse;
 import com.hazdik.kasirtoko.model.dto.StockInRequest;
 import com.hazdik.kasirtoko.model.entity.Product;
 import com.hazdik.kasirtoko.model.entity.StockMovement;
+import com.hazdik.kasirtoko.model.entity.Supplier;
 import com.hazdik.kasirtoko.repository.ProductRepository;
 import com.hazdik.kasirtoko.repository.StockMovementRepository;
+import com.hazdik.kasirtoko.repository.SupplierRepository;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
@@ -26,6 +29,7 @@ public class ProductService {
 
   private final ProductRepository productRepository;
   private final StockMovementRepository stockMovementRepository;
+  private final SupplierRepository supplierRepository;
 
   public List<ProductResponse> findProductsByQuery(String query) {
     return productRepository
@@ -84,19 +88,28 @@ public class ProductService {
   public ProductResponse stockInProduct(String id, StockInRequest request) {
     Product product =
         productRepository.findByIdForUpdate(id).orElseThrow(() -> new ProductNotFoundException(id));
+    Supplier supplier =
+        supplierRepository
+            .findById(request.supplierId())
+            .orElseThrow(() -> new SupplierNotFoundException(request.supplierId()));
 
     int stockBefore = product.getStock();
     int stockAfter = stockBefore + request.quantity();
 
     BigDecimal newPurchasePrice =
         calculateNewPurchasePrice(
-            product.getPurchasePrice(), stockBefore, request.unitPurchasePrice(), request.quantity(), stockAfter);
+            product.getPurchasePrice(),
+            stockBefore,
+            request.unitPurchasePrice(),
+            request.quantity(),
+            stockAfter);
 
     product.setStock(stockAfter);
     product.setPurchasePrice(newPurchasePrice);
 
     StockMovement stockMovement = new StockMovement();
     stockMovement.setProduct(product);
+    stockMovement.setSupplier(supplier);
     stockMovement.setQuantity(request.quantity());
     stockMovement.setUnitPurchasePrice(request.unitPurchasePrice());
     stockMovement.setStockBefore(stockBefore);

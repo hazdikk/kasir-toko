@@ -1,6 +1,7 @@
 package com.hazdik.kasirtoko.integration.support;
 
 import com.hazdik.kasirtoko.model.entity.Product;
+import com.hazdik.kasirtoko.model.entity.Supplier;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -45,12 +46,39 @@ public final class TestFixtures {
   public static Map<String, Object> aTransactionRequest(
       String productId, int quantity, String paymentMethod, String amountPaid) {
     return Map.of(
-        "items", List.of(Map.of("productId", productId, "quantity", quantity)),
-        "paymentMethod", paymentMethod,
-        "amountPaid", new BigDecimal(amountPaid));
+        "items",
+        List.of(Map.of("productId", productId, "quantity", quantity)),
+        "paymentMethod",
+        paymentMethod,
+        "amountPaid",
+        new BigDecimal(amountPaid));
   }
 
   public static Map<String, Object> aStockInRequest(int quantity, String unitPurchasePrice) {
-    return Map.of("quantity", quantity, "unitPurchasePrice", new BigDecimal(unitPurchasePrice));
+    return aStockInRequest(quantity, unitPurchasePrice, "supplier-id");
+  }
+
+  public static Map<String, Object> aStockInRequest(
+      int quantity, String unitPurchasePrice, String supplierId) {
+    return Map.of(
+        "quantity",
+        quantity,
+        "unitPurchasePrice",
+        new BigDecimal(unitPurchasePrice),
+        "supplierId",
+        supplierId);
+  }
+
+  public static Supplier aSupplier(String companyName, String senderName, String phoneNumber) {
+    Supplier supplier = new Supplier();
+    supplier.setCompanyName(companyName);
+    supplier.setSenderName(senderName);
+    supplier.setPhoneNumber(phoneNumber);
+    return supplier;
+  }
+
+  public static Map<String, Object> aSupplierRequest(
+      String companyName, String senderName, String phoneNumber) {
+    return Map.of("companyName", companyName, "senderName", senderName, "phoneNumber", phoneNumber);
   }
 }

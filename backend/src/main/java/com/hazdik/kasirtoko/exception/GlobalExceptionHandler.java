@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
     return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
   }
 
+  @ExceptionHandler(SupplierNotFoundException.class)
+  public ProblemDetail handleSupplierNotFound(SupplierNotFoundException ex) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+  }
+
   @ExceptionHandler(InsufficientStockException.class)
   public ProblemDetail handleInsufficientStock(InsufficientStockException ex) {
     return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());

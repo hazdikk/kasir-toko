@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hazdik.kasirtoko.repository.ProductRepository;
 import com.hazdik.kasirtoko.repository.StockMovementRepository;
+import com.hazdik.kasirtoko.repository.SupplierRepository;
 import com.hazdik.kasirtoko.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ public abstract class BaseIntegrationTest {
   @Autowired protected MockMvc mockMvc;
   @Autowired private ProductRepository productRepository;
   @Autowired private StockMovementRepository stockMovementRepository;
+  @Autowired private SupplierRepository supplierRepository;
   @Autowired private TransactionRepository transactionRepository;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -38,6 +40,7 @@ public abstract class BaseIntegrationTest {
     transactionRepository.deleteAll();
     stockMovementRepository.deleteAll();
     productRepository.deleteAll();
+    supplierRepository.deleteAll();
   }
 
   protected String asJsonString(Object value) {
@@ -65,7 +68,8 @@ public abstract class BaseIntegrationTest {
     return readResponseBody(mvcResult.getResponse().getContentAsString(), responseType);
   }
 
-  protected <T> T postApi(String path, Object requestBody, int expectedStatus, TypeReference<T> responseType)
+  protected <T> T postApi(
+      String path, Object requestBody, int expectedStatus, TypeReference<T> responseType)
       throws Exception {
     MvcResult mvcResult =
         mockMvc
