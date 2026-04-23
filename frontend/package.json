@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:agent-docs": "node scripts/sync-agent-docs.mjs"
   },
   "dependencies": {
     "@zxing/browser": "^0.1.5",

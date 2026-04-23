@@ -237,15 +237,20 @@ interface ReceiptProps {
 }
 
 function Receipt({ transaction, onClose }: ReceiptProps) {
+  const createdAt = new Date(transaction.createdAt).toLocaleString("id-ID");
+  const paymentMethodLabel = transaction.paymentMethod === "CASH" ? "Tunai" : "Kartu";
+
+  function handlePrint() {
+    window.print();
+  }
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6">
         <div className="mb-4 text-center">
           <div className="mb-2 text-4xl">✅</div>
           <h2 className="text-lg font-bold text-gray-900">Transaksi Berhasil</h2>
-          <p className="text-sm text-gray-500">
-            {new Date(transaction.createdAt).toLocaleString("id-ID")}
-          </p>
+          <p className="text-sm text-gray-500">{createdAt}</p>
         </div>
 
         <ul className="mb-4 divide-y divide-gray-100 text-sm">
@@ -263,6 +268,10 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
           <span>Total</span>
           <span>{formatRupiah(transaction.totalAmount)}</span>
         </div>
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Metode</span>
+          <span>{paymentMethodLabel}</span>
+        </div>
 
         {transaction.paymentMethod === "CASH" && (
           <>
@@ -277,12 +286,65 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
           </>
         )}
 
-        <button
-          onClick={onClose}
-          className="mt-5 w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white active:bg-blue-700"
-        >
-          Transaksi Baru
-        </button>
+        <div className="mt-5 space-y-3">
+          <button
+            onClick={handlePrint}
+            className="w-full rounded-xl border border-gray-300 bg-white py-3 text-base font-semibold text-gray-800 active:bg-gray-100"
+          >
+            Print 58mm
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white active:bg-blue-700"
+          >
+            Transaksi Baru
+          </button>
+        </div>
+      </div>
+
+      <div className="print-receipt" aria-hidden="true">
+        <div className="print-receipt__header">
+          <h1>Kasir Toko</h1>
+          <p>Struk Transaksi</p>
+          <p>{createdAt}</p>
+        </div>
+
+        <div className="print-receipt__items">
+          {transaction.items.map((item) => (
+            <div key={item.productId} className="print-receipt__item">
+              <div className="print-receipt__item-name">{item.productName}</div>
+              <div className="print-receipt__item-row">
+                <span>
+                  {item.quantity} x {formatRupiah(item.unitPrice)}
+                </span>
+                <span>{formatRupiah(item.subtotal)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="print-receipt__totals">
+          <div className="print-receipt__line">
+            <span>Total</span>
+            <span>{formatRupiah(transaction.totalAmount)}</span>
+          </div>
+          <div className="print-receipt__line">
+            <span>Metode</span>
+            <span>{paymentMethodLabel}</span>
+          </div>
+          {transaction.paymentMethod === "CASH" && (
+            <>
+              <div className="print-receipt__line">
+                <span>Bayar</span>
+                <span>{formatRupiah(transaction.amountPaid)}</span>
+              </div>
+              <div className="print-receipt__line">
+                <span>Kembalian</span>
+                <span>{formatRupiah(transaction.changeAmount)}</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
