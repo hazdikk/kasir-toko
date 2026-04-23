@@ -20,6 +20,20 @@ export interface ProductRequest {
 export interface StockInRequest {
   quantity: number;
   unitPurchasePrice: number;
+  supplierId: string;
+}
+
+export interface Supplier {
+  id: string;
+  companyName: string;
+  senderName: string;
+  phoneNumber: string;
+}
+
+export interface SupplierRequest {
+  companyName: string;
+  senderName: string;
+  phoneNumber: string;
 }
 
 export type PaymentMethod = "CASH" | "CARD";

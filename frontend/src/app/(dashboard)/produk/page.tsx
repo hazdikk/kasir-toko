@@ -11,9 +11,11 @@ import {
   stockInProduct,
 } from "@/services/products";
 import { ApiException } from "@/services/api";
+import { createSupplier, searchSuppliers } from "@/services/suppliers";
 import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import type { Product, ProductRequest, StockInRequest } from "@/types";
+import SupplierForm from "@/components/SupplierForm";
+import type { Product, ProductRequest, StockInRequest, Supplier, SupplierRequest } from "@/types";
 
 function ScanIcon() {
   return (
@@ -335,8 +337,51 @@ interface StockInFormProps {
 function StockInForm({ product, onSave, onCancel }: StockInFormProps) {
   const [quantity, setQuantity] = useState("");
   const [unitPurchasePrice, setUnitPurchasePrice] = useState("");
+  const [supplierQuery, setSupplierQuery] = useState("");
+  const [debouncedSupplierQuery, setDebouncedSupplierQuery] = useState("");
+  const [supplierResults, setSupplierResults] = useState<Supplier[]>([]);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [supplierLoading, setSupplierLoading] = useState(false);
+  const [supplierError, setSupplierError] = useState<string | null>(null);
+  const [showCreateSupplier, setShowCreateSupplier] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSupplierQuery(supplierQuery.trim());
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [supplierQuery]);
+
+  useEffect(() => {
+    if (!debouncedSupplierQuery) return;
+
+    let cancelled = false;
+    searchSuppliers(debouncedSupplierQuery)
+      .then((data) => {
+        if (!cancelled) {
+          setSupplierResults(data);
+          setSupplierError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setSupplierError(err instanceof Error ? err.message : "Gagal mencari supplier.");
+          setSupplierResults([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSupplierLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSupplierQuery]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -352,15 +397,50 @@ function StockInForm({ product, onSave, onCancel }: StockInFormProps) {
       setError("Harga beli satuan harus lebih dari 0.");
       return;
     }
+    if (!selectedSupplier) {
+      setError("Supplier wajib dipilih.");
+      return;
+    }
 
     setSaving(true);
     try {
-      await onSave({ quantity: parsedQuantity, unitPurchasePrice: parsedUnitPurchasePrice });
+      await onSave({
+        quantity: parsedQuantity,
+        unitPurchasePrice: parsedUnitPurchasePrice,
+        supplierId: selectedSupplier.id,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menambahkan stok.");
       setSaving(false);
     }
   }
+
+  function handleSupplierQueryChange(value: string) {
+    setSupplierQuery(value);
+    setSelectedSupplier(null);
+    setSupplierError(null);
+    if (!value.trim()) {
+      setSupplierResults([]);
+      setSupplierLoading(false);
+      return;
+    }
+    setSupplierLoading(true);
+  }
+
+  function handleSelectSupplier(supplier: Supplier) {
+    setSelectedSupplier(supplier);
+    setSupplierQuery(supplier.companyName);
+    setSupplierResults([]);
+    setSupplierError(null);
+  }
+
+  async function handleCreateSupplier(data: SupplierRequest) {
+    const supplier = await createSupplier(data);
+    handleSelectSupplier(supplier);
+    setShowCreateSupplier(false);
+  }
+
+  const canCreateSupplier = supplierQuery.trim().length > 0 && !selectedSupplier;
 
   return (
     <div
@@ -406,6 +486,60 @@ function StockInForm({ product, onSave, onCancel }: StockInFormProps) {
             />
           </div>
 
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Supplier</label>
+            <input
+              type="text"
+              value={supplierQuery}
+              onChange={(e) => handleSupplierQueryChange(e.target.value)}
+              placeholder="Cari perusahaan atau pengirim"
+              autoComplete="off"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+
+            {selectedSupplier && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                <p className="text-sm font-medium text-blue-900">{selectedSupplier.companyName}</p>
+                <p className="text-sm text-blue-700">
+                  {selectedSupplier.senderName} · {selectedSupplier.phoneNumber}
+                </p>
+              </div>
+            )}
+
+            {supplierLoading && <p className="text-sm text-gray-500">Mencari...</p>}
+            {supplierError && <p className="text-sm text-red-600">{supplierError}</p>}
+
+            {!selectedSupplier && supplierResults.length > 0 && (
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white py-2">
+                {supplierResults.map((supplier) => (
+                  <button
+                    key={supplier.id}
+                    type="button"
+                    onClick={() => handleSelectSupplier(supplier)}
+                    className="block min-h-11 w-full px-4 py-3 text-left active:bg-gray-100"
+                  >
+                    <span className="block text-base font-medium text-gray-900">
+                      {supplier.companyName}
+                    </span>
+                    <span className="block text-sm text-gray-500">
+                      {supplier.senderName} · {supplier.phoneNumber}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {canCreateSupplier && !supplierLoading && (
+              <button
+                type="button"
+                onClick={() => setShowCreateSupplier(true)}
+                className="min-h-11 rounded-xl border border-blue-200 px-4 py-3 text-left text-base font-medium text-blue-700 active:bg-blue-50"
+              >
+                Tambah Supplier
+              </button>
+            )}
+          </div>
+
           {error && (
             <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>
           )}
@@ -421,7 +555,7 @@ function StockInForm({ product, onSave, onCancel }: StockInFormProps) {
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || !selectedSupplier}
               className="flex-1 rounded-xl bg-blue-600 py-3 text-base font-medium text-white active:bg-blue-700 disabled:opacity-50"
             >
               {saving ? "Menyimpan…" : "Tambah Stok"}
@@ -429,6 +563,14 @@ function StockInForm({ product, onSave, onCancel }: StockInFormProps) {
           </div>
         </form>
       </div>
+
+      {showCreateSupplier && (
+        <SupplierForm
+          initialCompanyName={supplierQuery.trim()}
+          onSave={handleCreateSupplier}
+          onCancel={() => setShowCreateSupplier(false)}
+        />
+      )}
     </div>
   );
 }
@@ -612,7 +754,7 @@ export default function ProdukPage() {
       refetch();
     } catch (err) {
       if (err instanceof ApiException && err.status === 404) {
-        throw new Error("Produk tidak ditemukan.");
+        throw new Error(err.message.includes("Supplier") ? "Supplier tidak ditemukan." : "Produk tidak ditemukan.");
       }
       throw err instanceof Error ? err : new Error("Gagal menambahkan stok.");
     }
