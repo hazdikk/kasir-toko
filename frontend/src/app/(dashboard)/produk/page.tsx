@@ -49,8 +49,15 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/40">
-      <div className="w-full rounded-t-2xl bg-white p-6">
+    <div
+      className="fixed inset-0 z-[60] flex items-end bg-black/40"
+      onClick={onCancel}
+      role="presentation"
+    >
+      <div
+        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-t-2xl bg-white p-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="mb-5 text-lg font-semibold text-gray-900">
           {initial ? "Edit Produk" : "Tambah Produk"}
         </h2>
@@ -65,7 +72,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
                 onChange={(e) => setBarcode(e.target.value)}
                 placeholder="Contoh: 8991234567890"
                 inputMode="numeric"
-                className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
               <button
                 type="button"
@@ -99,7 +106,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Contoh: Indomie Goreng"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -112,7 +119,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
               placeholder="Contoh: 3500"
               inputMode="numeric"
               min="1"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -125,7 +132,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
               placeholder="Contoh: 50"
               inputMode="numeric"
               min="0"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -179,8 +186,15 @@ function DeleteConfirm({ product, onConfirm, onCancel }: DeleteConfirmProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6">
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-6"
+      onClick={onCancel}
+      role="presentation"
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-white p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="mb-2 text-base font-semibold text-gray-900">Hapus Produk?</h2>
         <p className="mb-5 text-sm text-gray-600">
           <span className="font-medium">{product.name}</span> akan dihapus secara permanen.
@@ -293,7 +307,7 @@ export default function ProdukPage() {
           <p className="text-sm text-gray-400">Ketuk + untuk menambahkan produk pertama.</p>
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-gray-100 pb-20">
           {products.map((product) => (
             <li
               key={product.id}
