@@ -2,6 +2,7 @@ package com.hazdik.kasirtoko.service;
 
 import com.hazdik.kasirtoko.exception.InsufficientStockException;
 import com.hazdik.kasirtoko.exception.ProductNotFoundException;
+import com.hazdik.kasirtoko.exception.TransactionNotFoundException;
 import com.hazdik.kasirtoko.model.dto.TransactionItemRequest;
 import com.hazdik.kasirtoko.model.dto.TransactionRequest;
 import com.hazdik.kasirtoko.model.dto.TransactionResponse;
@@ -12,6 +13,9 @@ import com.hazdik.kasirtoko.repository.ProductRepository;
 import com.hazdik.kasirtoko.repository.TransactionRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,22 +29,30 @@ public class TransactionService {
 
   @Transactional
   public TransactionResponse createTransaction(TransactionRequest request) {
+    List<String> productIds =
+        request.items().stream().map(TransactionItemRequest::productId).toList();
+
+    Map<String, Product> productMap =
+        productRepository.findAllById(productIds).stream()
+            .collect(Collectors.toMap(Product::getId, p -> p));
+
+    for (TransactionItemRequest itemRequest : request.items()) {
+      Product product =
+          Optional.ofNullable(productMap.get(itemRequest.productId()))
+              .orElseThrow(() -> new ProductNotFoundException(itemRequest.productId()));
+      if (product.getStock() < itemRequest.quantity()) {
+        throw new InsufficientStockException(
+            product.getName(), product.getStock(), itemRequest.quantity());
+      }
+    }
+
     Transaction transaction = new Transaction();
     transaction.setPaymentMethod(request.paymentMethod());
     transaction.setAmountPaid(request.amountPaid());
 
     BigDecimal total = BigDecimal.ZERO;
     for (TransactionItemRequest itemRequest : request.items()) {
-      Product product =
-          productRepository
-              .findById(itemRequest.productId())
-              .orElseThrow(() -> new ProductNotFoundException(itemRequest.productId()));
-
-      if (product.getStock() < itemRequest.quantity()) {
-        throw new InsufficientStockException(
-            product.getName(), product.getStock(), itemRequest.quantity());
-      }
-
+      Product product = productMap.get(itemRequest.productId());
       product.setStock(product.getStock() - itemRequest.quantity());
 
       TransactionItem item = new TransactionItem();
@@ -63,7 +75,7 @@ public class TransactionService {
     return transactionRepository
         .findById(id)
         .map(TransactionResponse::from)
-        .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+        .orElseThrow(() -> new TransactionNotFoundException(id));
   }
 
   public List<TransactionResponse> findAllTransactions() {

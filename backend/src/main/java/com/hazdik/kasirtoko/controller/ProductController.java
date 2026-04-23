@@ -4,6 +4,7 @@ import com.hazdik.kasirtoko.model.dto.ProductRequest;
 import com.hazdik.kasirtoko.model.dto.ProductResponse;
 import com.hazdik.kasirtoko.service.ProductService;
 import java.util.List;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -32,13 +33,13 @@ public class ProductController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  public ProductResponse createProduct(@RequestBody ProductRequest request) {
+  public ProductResponse createProduct(@Valid @RequestBody ProductRequest request) {
     return productService.createProduct(request);
   }
 
   @PutMapping("/{id}")
   public ProductResponse updateProduct(
-      @PathVariable String id, @RequestBody ProductRequest request) {
+      @PathVariable String id, @Valid @RequestBody ProductRequest request) {
     return productService.updateProduct(id, request);
   }
 
