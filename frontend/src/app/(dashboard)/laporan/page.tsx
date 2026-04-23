@@ -15,6 +15,10 @@ function TransactionCard({ transaction }: { transaction: TransactionResponse }) 
     minute: "2-digit",
   });
   const itemCount = transaction.items.reduce((sum, i) => sum + i.quantity, 0);
+  const totalProfit = transaction.items.reduce(
+    (sum, item) => sum + (item.subtotal - item.unitPurchasePrice * item.quantity),
+    0,
+  );
 
   return (
     <li className="bg-white">
@@ -40,13 +44,21 @@ function TransactionCard({ transaction }: { transaction: TransactionResponse }) 
         <div className="border-t border-gray-100 px-4 pb-4 pt-3">
           <ul className="mb-3 space-y-2">
             {transaction.items.map((item) => (
-              <li key={item.productId} className="flex justify-between text-sm">
-                <span className="text-gray-700">
-                  {item.productName} ×{item.quantity}
-                </span>
-                <span className="font-medium text-gray-900">
-                  {formatRupiah(item.subtotal)}
-                </span>
+              <li key={item.productId} className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">
+                    {item.productName} ×{item.quantity}
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    {formatRupiah(item.subtotal)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-emerald-700">
+                  <span>Laba item</span>
+                  <span>
+                    {formatRupiah(item.subtotal - item.unitPurchasePrice * item.quantity)}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
@@ -68,6 +80,10 @@ function TransactionCard({ transaction }: { transaction: TransactionResponse }) 
                 </div>
               </>
             )}
+            <div className="flex justify-between text-emerald-700">
+              <span>Laba</span>
+              <span>{formatRupiah(totalProfit)}</span>
+            </div>
           </div>
         </div>
       )}

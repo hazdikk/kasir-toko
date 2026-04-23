@@ -22,7 +22,8 @@ interface ProductFormProps {
 function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
   const [barcode, setBarcode] = useState(initial?.barcode ?? "");
   const [name, setName] = useState(initial?.name ?? "");
-  const [price, setPrice] = useState(initial?.price.toString() ?? "");
+  const [purchasePrice, setPurchasePrice] = useState(initial?.purchasePrice.toString() ?? "");
+  const [sellingPrice, setSellingPrice] = useState(initial?.sellingPrice.toString() ?? "");
   const [stock, setStock] = useState(initial?.stock.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,16 +33,28 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
     e.preventDefault();
     setError(null);
 
-    const parsedPrice = Number(price);
+    const parsedPurchasePrice = Number(purchasePrice);
+    const parsedSellingPrice = Number(sellingPrice);
     const parsedStock = Number(stock);
 
     if (!name.trim()) return setError("Nama produk wajib diisi.");
-    if (isNaN(parsedPrice) || parsedPrice <= 0) return setError("Harga harus lebih dari 0.");
+    if (isNaN(parsedPurchasePrice) || parsedPurchasePrice <= 0) {
+      return setError("Harga beli harus lebih dari 0.");
+    }
+    if (isNaN(parsedSellingPrice) || parsedSellingPrice <= 0) {
+      return setError("Harga jual harus lebih dari 0.");
+    }
     if (isNaN(parsedStock) || parsedStock < 0) return setError("Stok tidak boleh negatif.");
 
     setSaving(true);
     try {
-      await onSave({ barcode: barcode.trim() || undefined, name: name.trim(), price: parsedPrice, stock: parsedStock });
+      await onSave({
+        barcode: barcode.trim() || undefined,
+        name: name.trim(),
+        purchasePrice: parsedPurchasePrice,
+        sellingPrice: parsedSellingPrice,
+        stock: parsedStock,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan produk.");
       setSaving(false);
@@ -111,12 +124,25 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">Harga (Rp)</label>
+            <label className="text-sm font-medium text-gray-700">Harga Beli (Rp)</label>
             <input
               type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
               placeholder="Contoh: 3500"
+              inputMode="numeric"
+              min="1"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Harga Jual (Rp)</label>
+            <input
+              type="number"
+              value={sellingPrice}
+              onChange={(e) => setSellingPrice(e.target.value)}
+              placeholder="Contoh: 5000"
               inputMode="numeric"
               min="1"
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -316,7 +342,7 @@ export default function ProdukPage() {
               <div className="flex-1 min-w-0">
                 <p className="truncate text-base font-medium text-gray-900">{product.name}</p>
                 <p className="text-sm text-gray-500">
-                  {formatRupiah(product.price)} · Stok: {product.stock}
+                  Beli: {formatRupiah(product.purchasePrice)} · Jual: {formatRupiah(product.sellingPrice)} · Stok: {product.stock}
                   {product.barcode && <span className="text-gray-400"> · {product.barcode}</span>}
                 </p>
               </div>

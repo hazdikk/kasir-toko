@@ -2,14 +2,16 @@ export interface Product {
   id: string;
   barcode?: string;
   name: string;
-  price: number;
+  purchasePrice: number;
+  sellingPrice: number;
   stock: number;
 }
 
 export interface ProductRequest {
   barcode?: string;
   name: string;
-  price: number;
+  purchasePrice: number;
+  sellingPrice: number;
   stock: number;
 }
 
@@ -30,7 +32,8 @@ export interface TransactionItemResponse {
   productId: string;
   productName: string;
   quantity: number;
-  unitPrice: number;
+  unitPurchasePrice: number;
+  unitSellingPrice: number;
   subtotal: number;
 }
 

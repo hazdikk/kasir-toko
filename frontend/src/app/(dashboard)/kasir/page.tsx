@@ -13,7 +13,7 @@ interface CartItem {
   productId: string;
   productName: string;
   quantity: number;
-  unitPrice: number;
+  unitSellingPrice: number;
 }
 
 type CartAction =
@@ -37,7 +37,7 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
           productId: action.product.id,
           productName: action.product.name,
           quantity: 1,
-          unitPrice: action.product.price,
+          unitSellingPrice: action.product.sellingPrice,
         },
       ];
     }
@@ -78,7 +78,7 @@ function CheckoutSheet({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const total = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  const total = cart.reduce((sum, i) => sum + i.unitSellingPrice * i.quantity, 0);
   const parsed = Number(amountPaid);
   const change = parsed - total;
   const canCheckout =
@@ -142,7 +142,7 @@ function CheckoutSheet({
                 <p className="truncate text-base font-medium text-gray-900">
                   {item.productName}
                 </p>
-                <p className="text-sm text-gray-500">{formatRupiah(item.unitPrice)}</p>
+                <p className="text-sm text-gray-500">{formatRupiah(item.unitSellingPrice)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <button
@@ -162,7 +162,7 @@ function CheckoutSheet({
                 </button>
               </div>
               <p className="w-24 shrink-0 text-right text-sm font-medium text-gray-900">
-                {formatRupiah(item.unitPrice * item.quantity)}
+                {formatRupiah(item.unitSellingPrice * item.quantity)}
               </p>
             </li>
           ))}
@@ -315,7 +315,7 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
               <div className="print-receipt__item-name">{item.productName}</div>
               <div className="print-receipt__item-row">
                 <span>
-                  {item.quantity} x {formatRupiah(item.unitPrice)}
+                  {item.quantity} x {formatRupiah(item.unitSellingPrice)}
                 </span>
                 <span>{formatRupiah(item.subtotal)}</span>
               </div>
@@ -407,7 +407,7 @@ export default function KasirPage() {
   }
 
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
-  const cartTotal = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  const cartTotal = cart.reduce((sum, i) => sum + i.unitSellingPrice * i.quantity, 0);
 
   return (
     <div className="flex flex-col">
@@ -464,7 +464,7 @@ export default function KasirPage() {
                       {product.name}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {formatRupiah(product.price)}
+                      {formatRupiah(product.sellingPrice)}
                       {outOfStock ? (
                         <span className="ml-2 text-red-400">Habis</span>
                       ) : (
