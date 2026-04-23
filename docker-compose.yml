@@ -1,0 +1,34 @@
+services:
+  frontend:
+    image: hazdik-kasir-toko-frontend:latest
+    container_name: hazdik-kasir-toko-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-/api}
+    depends_on:
+      - backend
+    networks:
+      - proxy_net
+
+  backend:
+    image: hazdik-kasir-toko-backend:latest
+    container_name: hazdik-kasir-toko-backend
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - APP_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL:-false}
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    external: true

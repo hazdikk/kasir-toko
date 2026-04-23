@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build frontend Docker image
+        run: |
+          set -a
+          source ~/playground/kasir-toko/.env
+          set +a
+          docker build \
+            --build-arg NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-/api}" \
+            -t hazdik-kasir-toko-frontend:latest \
+            ./frontend
+
+      - name: Build backend Docker image
+        run: docker build -t hazdik-kasir-toko-backend:latest ./backend
+
+      - name: Deploy with Docker Compose
+        run: docker compose --env-file ~/playground/kasir-toko/.env up -d --force-recreate
+
+      - name: Clean up old images
+        run: docker image prune -f

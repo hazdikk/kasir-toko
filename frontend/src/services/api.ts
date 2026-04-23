@@ -1,4 +1,5 @@
-const BASE_URL = "http://localhost:8080";
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
+const BASE_URL = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
 interface ApiError {
   title?: string;
