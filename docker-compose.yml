@@ -17,8 +17,8 @@ services:
     image: hazdik-kasir-toko-backend:latest
     container_name: hazdik-kasir-toko-backend
     restart: unless-stopped
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
     environment:
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
