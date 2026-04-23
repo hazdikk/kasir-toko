@@ -22,5 +22,6 @@ public class TransactionItem extends BaseEntity {
   private Product product;
 
   private int quantity;
-  private BigDecimal unitPrice;
+  private BigDecimal unitPurchasePrice;
+  private BigDecimal unitSellingPrice;
 }

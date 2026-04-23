@@ -58,11 +58,14 @@ public class TransactionService {
       TransactionItem item = new TransactionItem();
       item.setProduct(product);
       item.setQuantity(itemRequest.quantity());
-      item.setUnitPrice(product.getPrice());
+      item.setUnitPurchasePrice(product.getPurchasePrice());
+      item.setUnitSellingPrice(product.getSellingPrice());
       item.setTransaction(transaction);
       transaction.getItems().add(item);
 
-      total = total.add(product.getPrice().multiply(BigDecimal.valueOf(itemRequest.quantity())));
+      total =
+          total.add(
+              product.getSellingPrice().multiply(BigDecimal.valueOf(itemRequest.quantity())));
     }
 
     transaction.setTotalAmount(total);

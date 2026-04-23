@@ -9,5 +9,6 @@ import java.math.BigDecimal;
 public record ProductRequest(
     String barcode,
     @NotBlank String name,
-    @NotNull @Positive BigDecimal price,
+    @NotNull @Positive BigDecimal purchasePrice,
+    @NotNull @Positive BigDecimal sellingPrice,
     @Min(0) int stock) {}

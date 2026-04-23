@@ -17,6 +17,7 @@ public class Product extends BaseEntity {
   private String barcode;
 
   private String name;
-  private BigDecimal price;
+  private BigDecimal purchasePrice;
+  private BigDecimal sellingPrice;
   private int stock;
 }

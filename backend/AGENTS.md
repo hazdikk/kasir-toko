@@ -64,10 +64,18 @@ com.hazdik.kasirtoko/
 - Delete commented-out code — git history is the backup
 
 ### Tests
-- One assert per test when possible
-- Test name describes behavior: `shouldReturnEmptyCartWhenNoItemsAdded()`
-- Use Testcontainers (already configured) — no mocking the database
-- Arrange / Act / Assert structure, blank line between each section
+- Prefer controller integration tests for API behavior (`src/test/java/.../integration`).
+- Keep a shared `BaseIntegrationTest` with reusable HTTP helper methods (`getApi`, `postApi`, `putApi`, `deleteApi`).
+- Add reusable payload/entity factories under `integration/support/TestFixtures`.
+- Create one integration test class per controller (`ProductControllerIntegrationTest`, `TransactionControllerIntegrationTest`).
+- Test method names must follow `feature_scenario_expected` (example: `createProduct_validRequest_returnsCreatedProduct`).
+- Cover all controller endpoints with happy-path scenarios unless the task explicitly asks for error-path coverage.
+- Assert status code and critical response fields (not status-only assertions).
+- Keep tests deterministic by cleaning relevant repositories before each test and using `@Transactional`.
+- Keep Arrange / Act / Assert structure, with blank lines between sections.
+- Useful commands:
+  - `./mvnw test -Dtest='*ControllerIntegrationTest'` for controller integration suites.
+  - `./mvnw test` for full verification.
 
 ---
 

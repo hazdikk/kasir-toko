@@ -38,7 +38,8 @@ public class ProductService {
     Product product = new Product();
     product.setBarcode(request.barcode());
     product.setName(request.name());
-    product.setPrice(request.price());
+    product.setPurchasePrice(request.purchasePrice());
+    product.setSellingPrice(request.sellingPrice());
     product.setStock(request.stock());
     return ProductResponse.from(productRepository.save(product));
   }
@@ -49,7 +50,8 @@ public class ProductService {
         productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
     product.setBarcode(request.barcode());
     product.setName(request.name());
-    product.setPrice(request.price());
+    product.setPurchasePrice(request.purchasePrice());
+    product.setSellingPrice(request.sellingPrice());
     product.setStock(request.stock());
     return ProductResponse.from(productRepository.save(product));
   }
