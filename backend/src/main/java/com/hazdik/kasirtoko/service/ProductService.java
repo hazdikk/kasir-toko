@@ -5,7 +5,9 @@ import com.hazdik.kasirtoko.model.dto.ProductRequest;
 import com.hazdik.kasirtoko.model.dto.ProductResponse;
 import com.hazdik.kasirtoko.model.entity.Product;
 import com.hazdik.kasirtoko.repository.ProductRepository;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,17 +18,17 @@ public class ProductService {
 
   private final ProductRepository productRepository;
 
-  public List<ProductResponse> findProductsByName(String name) {
-    return productRepository.findByNameContainingIgnoreCase(name).stream()
+  public List<ProductResponse> findProductsByQuery(String query) {
+    return productRepository
+        .findByNameContainingIgnoreCaseOrBarcodeContainingIgnoreCase(query, query)
+        .stream()
+        .collect(
+            Collectors.toMap(
+                Product::getId, product -> product, (left, right) -> left, LinkedHashMap::new))
+        .values()
+        .stream()
         .map(ProductResponse::from)
         .toList();
-  }
-
-  public ProductResponse findProductByBarcode(String barcode) {
-    return productRepository
-        .findByBarcode(barcode)
-        .map(ProductResponse::from)
-        .orElseThrow(() -> new ProductNotFoundException(barcode));
   }
 
   public List<ProductResponse> findAllProducts() {

@@ -23,10 +23,6 @@ export function deleteProduct(id: string): Promise<void> {
   return apiFetch<void>(`/products/${id}`, { method: "DELETE" });
 }
 
-export function searchProducts(name: string): Promise<Product[]> {
-  return apiFetch<Product[]>(`/products/search?name=${encodeURIComponent(name)}`);
-}
-
-export function getProductByBarcode(barcode: string): Promise<Product> {
-  return apiFetch<Product>(`/products/barcode/${encodeURIComponent(barcode)}`);
+export function searchProducts(query: string): Promise<Product[]> {
+  return apiFetch<Product[]>(`/products/search?q=${encodeURIComponent(query)}`);
 }

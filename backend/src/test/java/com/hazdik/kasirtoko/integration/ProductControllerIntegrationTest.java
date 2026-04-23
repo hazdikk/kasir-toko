@@ -1,6 +1,8 @@
 package com.hazdik.kasirtoko.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.hazdik.kasirtoko.integration.support.TestFixtures;
@@ -30,12 +32,12 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   }
 
   @Test
-  void searchProductsByName_matchingName_returnsFilteredProducts() throws Exception {
+  void searchProducts_matchingName_returnsFilteredProducts() throws Exception {
     productRepository.save(TestFixtures.aProduct("SKU-1002", "Teh Botol", "3000", "4500", 8));
     productRepository.save(TestFixtures.aProduct("SKU-1003", "Susu", "7000", "10000", 5));
 
     List<Map<String, Object>> response =
-        getApi("/products/search?name=teh", new TypeReference<>() {});
+        getApi("/products/search?q=teh", new TypeReference<>() {});
 
     assertThat(response).hasSize(1);
     assertThat(response.getFirst().get("barcode")).isEqualTo("SKU-1002");
@@ -43,17 +45,34 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   }
 
   @Test
-  void findProductByBarcode_existingBarcode_returnsProduct() throws Exception {
-    productRepository.save(TestFixtures.aProduct("SKU-1004", "Roti", "4000", "6000", 12));
+  void searchProducts_partialBarcode_returnsMatchedProducts() throws Exception {
+    productRepository.save(TestFixtures.aProduct("SKU-1008", "Kerupuk", "2000", "3500", 11));
+    productRepository.save(TestFixtures.aProduct("SKU-1009", "Keripik", "2500", "4000", 7));
+    productRepository.save(TestFixtures.aProduct("ABC-2001", "Rengginang", "3000", "4500", 5));
 
-    Map<String, Object> response =
-        getApi("/products/barcode/SKU-1004", new TypeReference<>() {});
+    List<Map<String, Object>> response =
+        getApi("/products/search?q=SKU-100", new TypeReference<>() {});
 
-    assertThat(response.get("barcode")).isEqualTo("SKU-1004");
-    assertThat(response.get("name")).isEqualTo("Roti");
-    assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("4000");
-    assertThat(decimalOf(response.get("sellingPrice"))).isEqualByComparingTo("6000");
-    assertThat(response.get("stock")).isEqualTo(12);
+    assertThat(response).hasSize(2);
+    assertThat(response).extracting(item -> item.get("barcode")).containsExactlyInAnyOrder("SKU-1008", "SKU-1009");
+  }
+
+  @Test
+  void searchProducts_nameAndBarcodeMatchSameProduct_returnsUniqueProduct() throws Exception {
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1010", "Paket SKU-1010", "8000", "11000", 4));
+
+    List<Map<String, Object>> response =
+        getApi("/products/search?q=SKU-1010", new TypeReference<>() {});
+
+    assertThat(response).hasSize(1);
+    assertThat(response.getFirst().get("barcode")).isEqualTo("SKU-1010");
+    assertThat(response.getFirst().get("name")).isEqualTo("Paket SKU-1010");
+  }
+
+  @Test
+  void searchProducts_missingQueryParam_returnsBadRequest() throws Exception {
+    mockMvc.perform(get("/products/search")).andExpect(status().isBadRequest());
   }
 
   @Test

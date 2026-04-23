@@ -22,13 +22,8 @@ public class ProductController {
   }
 
   @GetMapping("/search")
-  public List<ProductResponse> searchProductsByName(@RequestParam String name) {
-    return productService.findProductsByName(name);
-  }
-
-  @GetMapping("/barcode/{barcode}")
-  public ProductResponse getProductByBarcode(@PathVariable String barcode) {
-    return productService.findProductByBarcode(barcode);
+  public List<ProductResponse> searchProducts(@RequestParam String q) {
+    return productService.findProductsByQuery(q);
   }
 
   @PostMapping

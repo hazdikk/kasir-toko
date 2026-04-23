@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useReducer } from "react";
-import { getProducts, getProductByBarcode } from "@/services/products";
+import { getProducts, searchProducts } from "@/services/products";
 import { createTransaction } from "@/services/transactions";
 import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
@@ -356,6 +356,11 @@ export default function KasirPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [cart, dispatch] = useReducer(cartReducer, []);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -378,6 +383,43 @@ export default function KasirPage() {
     return () => { cancelled = true; };
   }, [refresh]);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [query]);
+
+  useEffect(() => {
+    if (!debouncedQuery) {
+      return;
+    }
+    let cancelled = false;
+    searchProducts(debouncedQuery)
+      .then((data) => {
+        if (!cancelled) {
+          setSearchResults(data);
+          setSearchError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setSearchError(err instanceof Error ? err.message : "Gagal mencari produk.");
+          setSearchResults([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
+
   function refetch() {
     setLoading(true);
     setRefresh((n) => n + 1);
@@ -385,8 +427,25 @@ export default function KasirPage() {
 
   async function handleScan(code: string) {
     setShowScanner(false);
+    const scannedCode = code.trim();
+    if (!scannedCode) {
+      setScanFeedback({ message: "Barcode kosong.", isError: true });
+      setTimeout(() => setScanFeedback(null), 2500);
+      return;
+    }
+
     try {
-      const product = await getProductByBarcode(code);
+      const products = await searchProducts(scannedCode);
+      const product = products.find(
+        (item) => item.barcode?.toLowerCase() === scannedCode.toLowerCase(),
+      );
+
+      if (!product) {
+        setScanFeedback({ message: `Produk tidak ditemukan: ${scannedCode}`, isError: true });
+        setTimeout(() => setScanFeedback(null), 2500);
+        return;
+      }
+
       if (product.stock === 0) {
         setScanFeedback({ message: `${product.name} — stok habis`, isError: true });
       } else {
@@ -394,7 +453,7 @@ export default function KasirPage() {
         setScanFeedback({ message: `${product.name} ditambahkan`, isError: false });
       }
     } catch {
-      setScanFeedback({ message: `Produk tidak ditemukan: ${code}`, isError: true });
+      setScanFeedback({ message: `Produk tidak ditemukan: ${scannedCode}`, isError: true });
     }
     setTimeout(() => setScanFeedback(null), 2500);
   }
@@ -408,25 +467,46 @@ export default function KasirPage() {
 
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
   const cartTotal = cart.reduce((sum, i) => sum + i.unitSellingPrice * i.quantity, 0);
+  const hasQuery = query.trim().length > 0;
+  const visibleProducts = hasQuery ? searchResults : products;
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-4">
-        <h1 className="text-lg font-semibold text-gray-900">Kasir</h1>
-        <button
-          onClick={() => setShowScanner(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-600 active:bg-gray-100"
-          aria-label="Scan barcode"
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" />
-            <line x1="7" y1="8" x2="7" y2="16" strokeLinecap="round" />
-            <line x1="10" y1="8" x2="10" y2="16" strokeLinecap="round" />
-            <line x1="13" y1="8" x2="13" y2="16" strokeLinecap="round" />
-            <line x1="16" y1="8" x2="16" y2="11" strokeLinecap="round" />
-            <line x1="16" y1="13" x2="16" y2="16" strokeLinecap="round" />
-          </svg>
-        </button>
+      <div className="space-y-3 border-b border-gray-200 bg-white px-4 py-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-gray-900">Kasir</h1>
+          <button
+            onClick={() => setShowScanner(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-600 active:bg-gray-100"
+            aria-label="Scan barcode"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" />
+              <line x1="7" y1="8" x2="7" y2="16" strokeLinecap="round" />
+              <line x1="10" y1="8" x2="10" y2="16" strokeLinecap="round" />
+              <line x1="13" y1="8" x2="13" y2="16" strokeLinecap="round" />
+              <line x1="16" y1="8" x2="16" y2="11" strokeLinecap="round" />
+              <line x1="16" y1="13" x2="16" y2="16" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            const nextQuery = e.target.value;
+            setQuery(nextQuery);
+            setSearchError(null);
+            if (!nextQuery.trim()) {
+              setSearchResults([]);
+              setSearchLoading(false);
+              return;
+            }
+            setSearchLoading(true);
+          }}
+          placeholder="Cari produk atau barcode"
+          className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
       </div>
 
       {scanFeedback && (
@@ -437,7 +517,7 @@ export default function KasirPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-24 text-gray-500">Memuat…</div>
-      ) : fetchError ? (
+      ) : !hasQuery && fetchError ? (
         <div className="flex flex-col items-center gap-4 py-24 px-6 text-center">
           <p className="text-gray-600">{fetchError}</p>
           <button
@@ -448,40 +528,58 @@ export default function KasirPage() {
           </button>
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100 pb-32">
-          {products.map((product) => {
-            const inCart = cart.find((i) => i.productId === product.id);
-            const outOfStock = product.stock === 0;
-            return (
-              <li key={product.id}>
-                <button
-                  onClick={() => dispatch({ type: "ADD", product })}
-                  disabled={outOfStock}
-                  className="flex w-full items-center gap-3 bg-white px-4 py-4 text-left active:bg-blue-50 disabled:opacity-40"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-medium text-gray-900">
-                      {product.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formatRupiah(product.sellingPrice)}
-                      {outOfStock ? (
-                        <span className="ml-2 text-red-400">Habis</span>
-                      ) : (
-                        <span className="text-gray-400"> · Stok: {product.stock}</span>
+        <>
+          {hasQuery && searchLoading && (
+            <div className="px-4 py-3 text-sm text-gray-500">Mencari…</div>
+          )}
+
+          {hasQuery && searchError && (
+            <div className="px-4 py-3 text-sm text-red-600">{searchError}</div>
+          )}
+
+          {!searchError && (
+            <ul className="divide-y divide-gray-100 pb-32">
+              {visibleProducts.map((product) => {
+                const inCart = cart.find((i) => i.productId === product.id);
+                const outOfStock = product.stock === 0;
+                return (
+                  <li key={product.id}>
+                    <button
+                      onClick={() => dispatch({ type: "ADD", product })}
+                      disabled={outOfStock}
+                      className="flex w-full items-center gap-3 bg-white px-4 py-4 text-left active:bg-blue-50 disabled:opacity-40"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-base font-medium text-gray-900">
+                          {product.name}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatRupiah(product.sellingPrice)}
+                          {outOfStock ? (
+                            <span className="ml-2 text-red-400">Habis</span>
+                          ) : (
+                            <span className="text-gray-400"> · Stok: {product.stock}</span>
+                          )}
+                        </p>
+                      </div>
+                      {inCart && (
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                          {inCart.quantity}
+                        </span>
                       )}
-                    </p>
-                  </div>
-                  {inCart && (
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-                      {inCart.quantity}
-                    </span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {!searchLoading && !searchError && visibleProducts.length === 0 && (
+            <div className="px-4 py-10 text-center text-sm text-gray-500">
+              Produk tidak ditemukan.
+            </div>
+          )}
+        </>
       )}
 
       {/* Cart bar */}
