@@ -12,7 +12,7 @@ Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · App Router
 ## Commands
 
 ```bash
-npm run dev     # start dev server (port 3010)
+npm run dev     # start dev server (port 3000)
 npm run build   # production build
 npm run lint    # ESLint check
 ```
