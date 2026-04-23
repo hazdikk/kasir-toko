@@ -37,6 +37,20 @@ src/
 └── lib/                    # pure utilities (formatters, helpers)
 ```
 
+## Styling — Mobile First
+
+This app is primarily used on phones. All UI must be designed for mobile first.
+
+- Default styles target mobile; use `md:` / `lg:` breakpoints to scale up for larger screens
+- Minimum tap target size: 44×44px for buttons and interactive elements
+- Avoid hover-only interactions — use `active:` states instead
+- Use `text-base` (16px) minimum for body text to prevent iOS auto-zoom on inputs
+- Prefer full-width (`w-full`) buttons and inputs on mobile
+- Avoid fixed pixel widths — use relative units, `w-full`, or Tailwind's fluid utilities
+- Test layouts at 375px (iPhone SE) as the baseline width
+
+---
+
 ## Clean Code — Robert C. Martin (adapted for React/TS)
 
 ### Naming
