@@ -12,7 +12,7 @@ import {
 import { ApiException } from "@/services/api";
 import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import type { Product, ProductRequest } from "@/types";
+import type { Product, ProductRequest, StockInRequest } from "@/types";
 
 // ─── Product Form Modal ───────────────────────────────────────────────────────
 
@@ -71,7 +71,7 @@ function ProductForm({ initial, onSave, onCancel }: ProductFormProps) {
       role="presentation"
     >
       <div
-        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-t-2xl bg-white p-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))]"
+        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-t-2xl bg-white p-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-5 text-lg font-semibold text-gray-900">
@@ -254,12 +254,120 @@ function DeleteConfirm({ product, onConfirm, onCancel }: DeleteConfirmProps) {
   );
 }
 
+interface StockInFormProps {
+  product: Product;
+  onSave: (data: StockInRequest) => Promise<void>;
+  onCancel: () => void;
+}
+
+function StockInForm({ product, onSave, onCancel }: StockInFormProps) {
+  const [quantity, setQuantity] = useState("");
+  const [unitPurchasePrice, setUnitPurchasePrice] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    const parsedQuantity = Number(quantity);
+    const parsedUnitPurchasePrice = Number(unitPurchasePrice);
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setError("Jumlah stok harus lebih dari 0.");
+      return;
+    }
+    if (isNaN(parsedUnitPurchasePrice) || parsedUnitPurchasePrice <= 0) {
+      setError("Harga beli satuan harus lebih dari 0.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onSave({ quantity: parsedQuantity, unitPurchasePrice: parsedUnitPurchasePrice });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menambahkan stok.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end bg-black/40"
+      onClick={onCancel}
+      role="presentation"
+    >
+      <div
+        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-t-2xl bg-white p-6 pb-[calc(1.5rem+4rem+env(safe-area-inset-bottom))]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">Tambah Stok</h2>
+        <p className="mb-1 text-base font-medium text-gray-900">{product.name}</p>
+        <p className="mb-5 text-sm text-gray-500">
+          Stok saat ini: {product.stock} · Harga beli: {formatRupiah(product.purchasePrice)}
+          {product.barcode && <span className="text-gray-400"> · {product.barcode}</span>}
+        </p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Jumlah stok</label>
+            <input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="Contoh: 5"
+              inputMode="numeric"
+              min="1"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Harga beli satuan (Rp)</label>
+            <input
+              type="number"
+              value={unitPurchasePrice}
+              onChange={(e) => setUnitPurchasePrice(e.target.value)}
+              placeholder="Contoh: 13000"
+              inputMode="numeric"
+              min="1"
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          {error && (
+            <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="flex-1 rounded-xl border border-gray-300 py-3 text-base font-medium text-gray-700 active:bg-gray-100 disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 rounded-xl bg-blue-600 py-3 text-base font-medium text-white active:bg-blue-700 disabled:opacity-50"
+            >
+              {saving ? "Menyimpan…" : "Tambah Stok"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 type Modal =
   | { type: "create" }
   | { type: "edit"; product: Product }
   | { type: "delete"; product: Product }
+  | { type: "stockIn"; product: Product }
   | null;
 
 type BannerTone = "success" | "error" | "info";
@@ -277,13 +385,6 @@ export default function ProdukPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanFeedback, setScanFeedback] = useState<{ tone: BannerTone; message: string } | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [selectionWarning, setSelectionWarning] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState("");
-  const [unitPurchasePrice, setUnitPurchasePrice] = useState("");
-  const [stockInSaving, setStockInSaving] = useState(false);
-  const [stockInError, setStockInError] = useState<string | null>(null);
-  const [stockInSuccess, setStockInSuccess] = useState<string | null>(null);
   const pendingScanCodeRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -293,17 +394,6 @@ export default function ProdukPage() {
         if (!cancelled) {
           setProducts(data);
           setError(null);
-          setSelectedProductId((currentId) => {
-            if (!currentId) return null;
-            const exists = data.some((item) => item.id === currentId);
-            if (exists) return currentId;
-            setSelectionWarning("Produk terpilih tidak ditemukan lagi. Silakan pilih ulang.");
-            setStockInError(null);
-            setStockInSuccess(null);
-            setQuantity("");
-            setUnitPurchasePrice("");
-            return null;
-          });
         }
       })
       .catch((err) => {
@@ -342,9 +432,8 @@ export default function ProdukPage() {
               (item) => item.barcode?.toLowerCase() === pendingScanCode.toLowerCase(),
             );
             if (exactMatches.length === 1) {
-              setSelectedProductId(exactMatches[0].id);
-              setSelectionWarning(null);
-              showScanFeedback("success", `${exactMatches[0].name} dipilih.`);
+              setModal({ type: "stockIn", product: exactMatches[0] });
+              showScanFeedback("success", `${exactMatches[0].name} dipilih untuk stock-in.`);
             } else if (exactMatches.length === 0) {
               showScanFeedback("error", `Produk tidak ditemukan: ${pendingScanCode}`);
             } else {
@@ -416,67 +505,26 @@ export default function ProdukPage() {
     pendingScanCodeRef.current = scannedCode;
   }
 
-  function handleSelectProduct(productId: string) {
-    setSelectedProductId(productId);
-    setSelectionWarning(null);
-    setStockInError(null);
-    setStockInSuccess(null);
-  }
-
-  async function handleStockInSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStockInError(null);
-    setStockInSuccess(null);
-
-    if (!selectedProductId) {
-      setStockInError("Pilih produk terlebih dahulu.");
-      return;
-    }
-
-    const parsedQuantity = Number(quantity);
-    const parsedUnitPurchasePrice = Number(unitPurchasePrice);
-
-    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      setStockInError("Jumlah stok harus lebih dari 0.");
-      return;
-    }
-    if (isNaN(parsedUnitPurchasePrice) || parsedUnitPurchasePrice <= 0) {
-      setStockInError("Harga beli satuan harus lebih dari 0.");
-      return;
-    }
-
-    setStockInSaving(true);
+  async function handleStockIn(product: Product, data: StockInRequest) {
     try {
-      const updatedProduct = await stockInProduct(selectedProductId, {
-        quantity: parsedQuantity,
-        unitPurchasePrice: parsedUnitPurchasePrice,
-      });
+      const updatedProduct = await stockInProduct(product.id, data);
       setProducts((prev) =>
         prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
       );
       setSearchResults((prev) =>
         prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
       );
-      setSelectedProductId(updatedProduct.id);
-      setStockInSuccess(`Stok ${updatedProduct.name} berhasil ditambahkan.`);
-      setQuantity("");
-      setUnitPurchasePrice("");
+      setModal(null);
+      showScanFeedback("success", `Stok ${updatedProduct.name} berhasil ditambahkan.`);
       refetch();
     } catch (err) {
       if (err instanceof ApiException && err.status === 404) {
-        setStockInError("Produk tidak ditemukan.");
-      } else {
-        setStockInError(err instanceof Error ? err.message : "Gagal menambahkan stok.");
+        throw new Error("Produk tidak ditemukan.");
       }
-    } finally {
-      setStockInSaving(false);
+      throw err instanceof Error ? err : new Error("Gagal menambahkan stok.");
     }
   }
 
-  const selectedProduct =
-    searchResults.find((item) => item.id === selectedProductId) ??
-    products.find((item) => item.id === selectedProductId) ??
-    null;
   const hasQuery = query.trim().length > 0;
   const visibleProducts = hasQuery ? searchResults : products;
 
@@ -484,13 +532,6 @@ export default function ProdukPage() {
     <div className="flex flex-col">
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-4">
         <h1 className="text-lg font-semibold text-gray-900">Produk</h1>
-        <button
-          onClick={() => setModal({ type: "create" })}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-xl text-white active:bg-blue-700"
-          aria-label="Tambah produk"
-        >
-          +
-        </button>
       </div>
 
       <div className="space-y-3 border-b border-gray-200 bg-white px-4 py-4">
@@ -527,6 +568,13 @@ export default function ProdukPage() {
               <line x1="16" y1="13" x2="16" y2="16" strokeLinecap="round" />
             </svg>
           </button>
+          <button
+            onClick={() => setModal({ type: "create" })}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl text-white active:bg-blue-700"
+            aria-label="Tambah produk"
+          >
+            +
+          </button>
         </div>
 
         {hasQuery && searchLoading && <p className="text-sm text-gray-500">Mencari…</p>}
@@ -546,72 +594,6 @@ export default function ProdukPage() {
           {scanFeedback.message}
         </div>
       )}
-
-      <div className="space-y-3 border-b border-gray-200 bg-gray-50 px-4 py-4">
-        <h2 className="text-base font-semibold text-gray-900">Stock-In</h2>
-        {selectionWarning && (
-          <p className="rounded-lg bg-yellow-50 px-4 py-2 text-sm text-yellow-700">{selectionWarning}</p>
-        )}
-
-        {selectedProduct ? (
-          <>
-            <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-              <p className="text-base font-medium text-gray-900">{selectedProduct.name}</p>
-              <p className="mt-1 text-sm text-gray-500">
-                Stok saat ini: {selectedProduct.stock} · Harga beli: {formatRupiah(selectedProduct.purchasePrice)}
-                {selectedProduct.barcode && <span className="text-gray-400"> · {selectedProduct.barcode}</span>}
-              </p>
-            </div>
-
-            <form onSubmit={handleStockInSubmit} className="space-y-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Jumlah stok</label>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="Contoh: 5"
-                  inputMode="numeric"
-                  min="1"
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Harga beli satuan (Rp)</label>
-                <input
-                  type="number"
-                  value={unitPurchasePrice}
-                  onChange={(e) => setUnitPurchasePrice(e.target.value)}
-                  placeholder="Contoh: 13000"
-                  inputMode="numeric"
-                  min="1"
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-
-              {stockInError && (
-                <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{stockInError}</p>
-              )}
-              {stockInSuccess && (
-                <p className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700">{stockInSuccess}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={stockInSaving}
-                className="w-full rounded-xl bg-blue-600 py-3 text-base font-medium text-white active:bg-blue-700 disabled:opacity-50"
-              >
-                {stockInSaving ? "Menyimpan…" : "Tambah Stok"}
-              </button>
-            </form>
-          </>
-        ) : (
-          <p className="rounded-xl border border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-500">
-            Cari lalu pilih produk untuk menambah stok.
-          </p>
-        )}
-      </div>
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center py-24 text-gray-500">
@@ -655,14 +637,10 @@ export default function ProdukPage() {
 
               <div className="flex shrink-0 items-center gap-2">
                 <button
-                  onClick={() => handleSelectProduct(product.id)}
-                  className={`rounded-xl border px-3 py-2 text-sm font-medium active:bg-gray-100 ${
-                    selectedProductId === product.id
-                      ? "border-blue-200 bg-blue-50 text-blue-700"
-                      : "border-gray-300 text-gray-700"
-                  }`}
+                  onClick={() => setModal({ type: "stockIn", product })}
+                  className="rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 active:bg-gray-100"
                 >
-                  {selectedProductId === product.id ? "Dipilih" : "Pilih"}
+                  Tambah Stok
                 </button>
                 <button
                   onClick={() => setModal({ type: "edit", product })}
@@ -703,6 +681,14 @@ export default function ProdukPage() {
         <DeleteConfirm
           product={modal.product}
           onConfirm={() => handleDelete(modal.product)}
+          onCancel={() => setModal(null)}
+        />
+      )}
+
+      {modal?.type === "stockIn" && (
+        <StockInForm
+          product={modal.product}
+          onSave={(data) => handleStockIn(modal.product, data)}
           onCancel={() => setModal(null)}
         />
       )}
