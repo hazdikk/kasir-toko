@@ -26,6 +26,7 @@ public class ProductService {
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
         Product product = new Product();
+        product.setBarcode(request.barcode());
         product.setName(request.name());
         product.setPrice(request.price());
         product.setStock(request.stock());
@@ -36,6 +37,7 @@ public class ProductService {
     public ProductResponse updateProduct(String id, ProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
+        product.setBarcode(request.barcode());
         product.setName(request.name());
         product.setPrice(request.price());
         product.setStock(request.stock());

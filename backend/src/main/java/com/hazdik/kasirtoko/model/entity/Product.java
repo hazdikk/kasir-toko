@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 @Getter @Setter @NoArgsConstructor
 public class Product extends BaseEntity {
 
+    @Column(unique = true)
+    private String barcode;
     private String name;
     private BigDecimal price;
     private int stock;

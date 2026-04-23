@@ -32,3 +32,4 @@ frontend/.env*.local
 /nbdist/
 build/
 /.claude/
+/backend/.claude/
