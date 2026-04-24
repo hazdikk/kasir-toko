@@ -73,6 +73,8 @@ com.hazdik.kasirtoko/
 - Assert status code and critical response fields (not status-only assertions).
 - Keep tests deterministic by cleaning relevant repositories before each test and using `@Transactional`.
 - Keep Arrange / Act / Assert structure, with blank lines between sections.
+- `findProductsByQuery` deduplicates results by product ID before returning — a product matching both name and barcode (or name and category) must appear only once in the response.
+- Do not test repository methods directly; test behaviour only through controller endpoints.
 - Useful commands:
   - `./mvnw test -Dtest='*ControllerIntegrationTest'` for controller integration suites.
   - `./mvnw test` for full verification.
