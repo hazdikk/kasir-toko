@@ -847,10 +847,10 @@ export default function ProdukPage() {
           {visibleProducts.map((product) => (
             <li
               key={product.id}
-              className="flex items-center gap-3 bg-white px-4 py-4"
+              className="flex flex-col gap-3 bg-white px-4 py-4"
             >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-medium text-gray-900">{product.name}</p>
+              <div className="min-w-0">
+                <p className="text-base font-medium text-gray-900">{product.name}</p>
                 <p className="text-sm text-gray-500">
                   Kategori: {product.category} ·{" "}
                   Beli: {formatRupiah(product.purchasePrice)} · Jual: {formatRupiah(product.sellingPrice)} · Stok: {product.stock}
@@ -858,10 +858,10 @@ export default function ProdukPage() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex items-center justify-end gap-2">
                 <button
                   onClick={() => setModal({ type: "stockIn", product })}
-                  className="rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 active:bg-gray-100"
+                  className="min-h-11 rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 active:bg-gray-100"
                 >
                   Tambah Stok
                 </button>
