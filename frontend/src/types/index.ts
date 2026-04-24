@@ -47,7 +47,7 @@ export interface SupplierRequest {
   phoneNumber: string;
 }
 
-export type PaymentMethod = "CASH" | "CARD";
+export type PaymentMethod = "CASH";
 
 export interface TransactionItemRequest {
   productId: string;

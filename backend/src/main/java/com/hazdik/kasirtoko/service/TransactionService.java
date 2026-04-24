@@ -46,11 +46,23 @@ public class TransactionService {
       }
     }
 
+    BigDecimal total =
+        request.items().stream()
+            .map(
+                itemRequest ->
+                    productMap
+                        .get(itemRequest.productId())
+                        .getSellingPrice()
+                        .multiply(BigDecimal.valueOf(itemRequest.quantity())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    if (request.amountPaid().compareTo(total) < 0) {
+      throw new IllegalArgumentException("Amount paid must be greater than or equal to total");
+    }
+
     Transaction transaction = new Transaction();
     transaction.setPaymentMethod(request.paymentMethod());
     transaction.setAmountPaid(request.amountPaid());
 
-    BigDecimal total = BigDecimal.ZERO;
     for (TransactionItemRequest itemRequest : request.items()) {
       Product product = productMap.get(itemRequest.productId());
       product.setStock(product.getStock() - itemRequest.quantity());
@@ -62,10 +74,6 @@ public class TransactionService {
       item.setUnitSellingPrice(product.getSellingPrice());
       item.setTransaction(transaction);
       transaction.getItems().add(item);
-
-      total =
-          total.add(
-              product.getSellingPrice().multiply(BigDecimal.valueOf(itemRequest.quantity())));
     }
 
     transaction.setTotalAmount(total);

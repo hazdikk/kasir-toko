@@ -6,7 +6,7 @@ import { createTransaction } from "@/services/transactions";
 import { STORE_NAME } from "@/lib/branding";
 import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
-import type { Product, PaymentMethod, TransactionResponse } from "@/types";
+import type { Product, TransactionResponse } from "@/types";
 
 const PRODUCT_PAGE_SIZE = 25;
 
@@ -76,7 +76,6 @@ function CheckoutSheet({
   onClose,
   onSuccess,
 }: CheckoutSheetProps) {
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [amountPaid, setAmountPaid] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,8 +83,7 @@ function CheckoutSheet({
   const total = cart.reduce((sum, i) => sum + i.unitSellingPrice * i.quantity, 0);
   const parsed = Number(amountPaid);
   const change = parsed - total;
-  const canCheckout =
-    cart.length > 0 && (paymentMethod === "CARD" || (parsed >= total && parsed > 0));
+  const canCheckout = cart.length > 0 && parsed >= total && parsed > 0;
 
   async function handleCheckout() {
     setError(null);
@@ -93,8 +91,8 @@ function CheckoutSheet({
     try {
       const result = await createTransaction({
         items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-        paymentMethod,
-        amountPaid: paymentMethod === "CARD" ? total : parsed,
+        paymentMethod: "CASH",
+        amountPaid: parsed,
       });
       onSuccess(result);
     } catch (err) {
@@ -179,42 +177,24 @@ function CheckoutSheet({
           <span className="text-xl font-bold text-gray-900">{formatRupiah(total)}</span>
         </div>
 
-        <div className="flex gap-3">
-          {(["CASH", "CARD"] as PaymentMethod[]).map((method) => (
-            <button
-              key={method}
-              onClick={() => setPaymentMethod(method)}
-              className={`flex-1 rounded-xl py-3 text-base font-medium ${
-                paymentMethod === method
-                  ? "bg-blue-600 text-white"
-                  : "border border-gray-300 text-gray-700 active:bg-gray-100"
-              }`}
-            >
-              {method === "CASH" ? "Tunai" : "Kartu"}
-            </button>
-          ))}
+        <div className="space-y-2">
+          <input
+            type="number"
+            value={amountPaid}
+            onChange={(e) => setAmountPaid(e.target.value)}
+            placeholder="Jumlah bayar tunai"
+            inputMode="numeric"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          {parsed >= total && parsed > 0 && (
+            <div className="flex items-center justify-between rounded-xl bg-green-50 px-4 py-3">
+              <span className="text-sm text-green-700">Kembalian</span>
+              <span className="text-base font-semibold text-green-700">
+                {formatRupiah(change)}
+              </span>
+            </div>
+          )}
         </div>
-
-        {paymentMethod === "CASH" && (
-          <div className="space-y-2">
-            <input
-              type="number"
-              value={amountPaid}
-              onChange={(e) => setAmountPaid(e.target.value)}
-              placeholder="Jumlah bayar"
-              inputMode="numeric"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-            {parsed >= total && parsed > 0 && (
-              <div className="flex items-center justify-between rounded-xl bg-green-50 px-4 py-3">
-                <span className="text-sm text-green-700">Kembalian</span>
-                <span className="text-base font-semibold text-green-700">
-                  {formatRupiah(change)}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
 
         {error && (
           <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>
@@ -241,7 +221,6 @@ interface ReceiptProps {
 
 function Receipt({ transaction, onClose }: ReceiptProps) {
   const createdAt = new Date(transaction.createdAt).toLocaleString("id-ID");
-  const paymentMethodLabel = transaction.paymentMethod === "CASH" ? "Tunai" : "Kartu";
 
   function handlePrint() {
     window.print();
@@ -274,21 +253,17 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
           </div>
           <div className="flex justify-between text-sm text-gray-600">
             <span>Metode</span>
-            <span>{paymentMethodLabel}</span>
+            <span>Tunai</span>
           </div>
 
-          {transaction.paymentMethod === "CASH" && (
-            <>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Bayar</span>
-                <span>{formatRupiah(transaction.amountPaid)}</span>
-              </div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Kembalian</span>
-                <span>{formatRupiah(transaction.changeAmount)}</span>
-              </div>
-            </>
-          )}
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>Bayar</span>
+            <span>{formatRupiah(transaction.amountPaid)}</span>
+          </div>
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>Kembalian</span>
+            <span>{formatRupiah(transaction.changeAmount)}</span>
+          </div>
 
           <div className="mt-5 space-y-3">
             <button
@@ -335,20 +310,16 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
           </div>
           <div className="print-receipt__line">
             <span>Metode</span>
-            <span>{paymentMethodLabel}</span>
+            <span>Tunai</span>
           </div>
-          {transaction.paymentMethod === "CASH" && (
-            <>
-              <div className="print-receipt__line">
-                <span>Bayar</span>
-                <span>{formatRupiah(transaction.amountPaid)}</span>
-              </div>
-              <div className="print-receipt__line">
-                <span>Kembalian</span>
-                <span>{formatRupiah(transaction.changeAmount)}</span>
-              </div>
-            </>
-          )}
+          <div className="print-receipt__line">
+            <span>Bayar</span>
+            <span>{formatRupiah(transaction.amountPaid)}</span>
+          </div>
+          <div className="print-receipt__line">
+            <span>Kembalian</span>
+            <span>{formatRupiah(transaction.changeAmount)}</span>
+          </div>
         </div>
       </div>
     </>

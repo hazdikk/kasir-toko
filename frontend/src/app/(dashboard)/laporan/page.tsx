@@ -28,9 +28,7 @@ function TransactionCard({ transaction }: { transaction: TransactionResponse }) 
       >
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-medium text-gray-900">{date}</p>
-          <p className="text-sm text-gray-500">
-            {itemCount} item · {transaction.paymentMethod === "CASH" ? "Tunai" : "Kartu"}
-          </p>
+          <p className="text-sm text-gray-500">{itemCount} item · Tunai</p>
         </div>
         <div className="shrink-0 text-right">
           <p className="text-base font-semibold text-gray-900">
@@ -68,18 +66,14 @@ function TransactionCard({ transaction }: { transaction: TransactionResponse }) 
               <span>Total</span>
               <span>{formatRupiah(transaction.totalAmount)}</span>
             </div>
-            {transaction.paymentMethod === "CASH" && (
-              <>
-                <div className="flex justify-between text-gray-500">
-                  <span>Bayar</span>
-                  <span>{formatRupiah(transaction.amountPaid)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Kembalian</span>
-                  <span>{formatRupiah(transaction.changeAmount)}</span>
-                </div>
-              </>
-            )}
+            <div className="flex justify-between text-gray-500">
+              <span>Bayar</span>
+              <span>{formatRupiah(transaction.amountPaid)}</span>
+            </div>
+            <div className="flex justify-between text-gray-500">
+              <span>Kembalian</span>
+              <span>{formatRupiah(transaction.changeAmount)}</span>
+            </div>
             <div className="flex justify-between text-emerald-700">
               <span>Laba</span>
               <span>{formatRupiah(totalProfit)}</span>

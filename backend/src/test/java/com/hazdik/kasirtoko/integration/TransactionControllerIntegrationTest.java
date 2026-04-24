@@ -1,6 +1,9 @@
 package com.hazdik.kasirtoko.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.hazdik.kasirtoko.integration.support.TestFixtures;
@@ -11,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 
 class TransactionControllerIntegrationTest extends BaseIntegrationTest {
 
@@ -46,7 +50,7 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     Map<String, Object> created =
         postApi(
             "/transactions",
-            TestFixtures.aTransactionRequest(product.getId(), 3, "CARD", "20000"),
+            TestFixtures.aTransactionRequest(product.getId(), 3, "CASH", "20000"),
             201,
             new TypeReference<>() {});
 
@@ -54,7 +58,7 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
         getApi("/transactions/" + created.get("id"), new TypeReference<>() {});
 
     assertThat(response.get("id")).isEqualTo(created.get("id"));
-    assertThat(response.get("paymentMethod")).isEqualTo("CARD");
+    assertThat(response.get("paymentMethod")).isEqualTo("CASH");
     assertThat(decimalOf(response.get("totalAmount"))).isEqualByComparingTo("15000");
   }
 
@@ -74,7 +78,7 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
         new TypeReference<Map<String, Object>>() {});
     postApi(
         "/transactions",
-        TestFixtures.aTransactionRequest(secondProduct.getId(), 1, "CARD", "70000"),
+        TestFixtures.aTransactionRequest(secondProduct.getId(), 1, "CASH", "70000"),
         201,
         new TypeReference<Map<String, Object>>() {});
 
@@ -84,7 +88,39 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
     assertThat(response).allSatisfy(transaction -> assertThat(transaction.get("id")).isNotNull());
     assertThat(response)
         .extracting(transaction -> transaction.get("paymentMethod"))
-        .containsExactlyInAnyOrder("CASH", "CARD");
+        .containsOnly("CASH");
+  }
+
+  @Test
+  void createTransaction_cardPaymentMethod_returnsBadRequest() throws Exception {
+    Product product =
+        productRepository.save(
+            TestFixtures.aProduct("SKU-2005", "Kopi", "Minuman", "6000", "9000", 12));
+    Map<String, Object> request =
+        TestFixtures.aTransactionRequest(product.getId(), 1, "CARD", "10000");
+
+    mockMvc
+        .perform(
+            post("/transactions")
+                .session(authenticatedSession)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(asJsonString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createTransaction_amountPaidBelowTotal_returnsBadRequest() throws Exception {
+    Product product =
+        productRepository.save(
+            TestFixtures.aProduct("SKU-2006", "Teh", "Minuman", "4000", "7000", 15));
+
+    postApi(
+        "/transactions",
+        TestFixtures.aTransactionRequest(product.getId(), 2, "CASH", "10000"),
+        400,
+        new TypeReference<Map<String, Object>>() {});
   }
 
   private BigDecimal decimalOf(Object value) {
