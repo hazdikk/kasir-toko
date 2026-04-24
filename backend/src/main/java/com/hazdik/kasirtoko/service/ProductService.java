@@ -36,7 +36,7 @@ public class ProductService {
 
   public List<ProductResponse> findProductsByQuery(String query) {
     return productRepository
-        .findByNameContainingIgnoreCaseOrBarcodeContainingIgnoreCase(query, query)
+        .findByNameContainingIgnoreCaseOrBarcodeContainingIgnoreCaseOrCategoryContainingIgnoreCase(query, query, query)
         .stream()
         .collect(
             Collectors.toMap(

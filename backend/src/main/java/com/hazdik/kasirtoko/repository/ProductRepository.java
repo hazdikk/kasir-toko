@@ -10,8 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ProductRepository extends JpaRepository<Product, String> {
-  List<Product> findByNameContainingIgnoreCaseOrBarcodeContainingIgnoreCase(
-      String name, String barcode);
+  List<Product> findByNameContainingIgnoreCaseOrBarcodeContainingIgnoreCaseOrCategoryContainingIgnoreCase(
+      String name, String barcode, String category);
 
   @Query("select p.category from Product p where p.category is not null")
   List<String> findAllCategories();

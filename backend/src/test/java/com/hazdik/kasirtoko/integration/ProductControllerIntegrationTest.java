@@ -112,6 +112,23 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   }
 
   @Test
+  void searchProducts_matchingCategory_returnsFilteredProducts() throws Exception {
+    productRepository.save(
+        TestFixtures.aProduct("SKU-2001", "Apel Fuji", "Buah", "8000", "12000", 15));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-2002", "Pisang", "Buah", "5000", "7000", 20));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-2003", "Keripik", "Snack", "3000", "5000", 10));
+
+    List<Map<String, Object>> response = getApi("/products/search?q=buah", new TypeReference<>() {});
+
+    assertThat(response).hasSize(2);
+    assertThat(response)
+        .extracting(item -> item.get("barcode"))
+        .containsExactlyInAnyOrder("SKU-2001", "SKU-2002");
+  }
+
+  @Test
   void searchProducts_missingQueryParam_returnsBadRequest() throws Exception {
     mockMvc
         .perform(get("/products/search").session(authenticatedSession))
