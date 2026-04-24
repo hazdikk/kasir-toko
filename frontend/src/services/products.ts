@@ -1,8 +1,18 @@
 import { apiFetch } from "./api";
-import type { Product, ProductRequest, StockInRequest } from "@/types";
+import type { Product, ProductPage, ProductRequest, StockInRequest } from "@/types";
 
-export function getProducts(): Promise<Product[]> {
-  return apiFetch<Product[]>("/products");
+interface ProductPageParams {
+  page?: number;
+  size?: number;
+}
+
+export function getProducts(params: ProductPageParams = {}): Promise<ProductPage> {
+  const searchParams = new URLSearchParams();
+  if (params.page !== undefined) searchParams.set("page", params.page.toString());
+  if (params.size !== undefined) searchParams.set("size", params.size.toString());
+
+  const query = searchParams.toString();
+  return apiFetch<ProductPage>(query ? `/products?${query}` : "/products");
 }
 
 export function getProductCategories(): Promise<string[]> {

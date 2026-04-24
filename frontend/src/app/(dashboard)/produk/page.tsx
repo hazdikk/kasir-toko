@@ -598,9 +598,14 @@ type Modal =
   | null;
 
 type BannerTone = "success" | "error" | "info";
+const PRODUCT_PAGE_SIZE = 25;
 
 export default function ProdukPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [nextProductPage, setNextProductPage] = useState(0);
+  const [hasMoreProducts, setHasMoreProducts] = useState(false);
+  const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [productCategories, setProductCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -633,11 +638,14 @@ export default function ProdukPage() {
         }
       });
 
-    getProducts()
+    getProducts({ page: 0, size: PRODUCT_PAGE_SIZE })
       .then((data) => {
         if (!cancelled) {
-          setProducts(data);
+          setProducts(data.content);
+          setNextProductPage(data.page + 1);
+          setHasMoreProducts(!data.last);
           setError(null);
+          setLoadMoreError(null);
         }
       })
       .catch((err) => {
@@ -708,7 +716,27 @@ export default function ProdukPage() {
 
   function refetch() {
     setLoading(true);
+    setLoadingMoreProducts(false);
+    setProducts([]);
+    setNextProductPage(0);
+    setHasMoreProducts(false);
+    setLoadMoreError(null);
     setRefresh((n) => n + 1);
+  }
+
+  async function handleLoadMoreProducts() {
+    setLoadingMoreProducts(true);
+    setLoadMoreError(null);
+    try {
+      const data = await getProducts({ page: nextProductPage, size: PRODUCT_PAGE_SIZE });
+      setProducts((prev) => [...prev, ...data.content]);
+      setNextProductPage(data.page + 1);
+      setHasMoreProducts(!data.last);
+    } catch (err) {
+      setLoadMoreError(err instanceof Error ? err.message : "Gagal memuat produk.");
+    } finally {
+      setLoadingMoreProducts(false);
+    }
   }
 
   function showScanFeedback(tone: BannerTone, message: string) {
@@ -856,41 +884,58 @@ export default function ProdukPage() {
           )}
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100 pb-20">
-          {visibleProducts.map((product) => (
-            <li
-              key={product.id}
-              className="flex flex-col gap-2 bg-white px-4 py-4"
-            >
-              <p className="text-base font-medium text-gray-900">{product.name}</p>
+        <>
+          <ul className="divide-y divide-gray-100 pb-4">
+            {visibleProducts.map((product) => (
+              <li
+                key={product.id}
+                className="flex flex-col gap-2 bg-white px-4 py-4"
+              >
+                <p className="text-base font-medium text-gray-900">{product.name}</p>
 
-              <div className="flex items-start gap-3">
-                <p className="min-w-0 flex-1 text-sm text-gray-500">
-                  Kategori: {product.category} ·{" "}
-                  Beli: {formatRupiah(product.purchasePrice)} · Jual: {formatRupiah(product.sellingPrice)} · Stok: {product.stock}
-                  {product.barcode && <span className="text-gray-400"> · {product.barcode}</span>}
-                </p>
+                <div className="flex items-start gap-3">
+                  <p className="min-w-0 flex-1 text-sm text-gray-500">
+                    Kategori: {product.category} ·{" "}
+                    Beli: {formatRupiah(product.purchasePrice)} · Jual: {formatRupiah(product.sellingPrice)} · Stok: {product.stock}
+                    {product.barcode && <span className="text-gray-400"> · {product.barcode}</span>}
+                  </p>
 
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    onClick={() => setModal({ type: "stockIn", product })}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 text-base text-blue-600 active:bg-blue-50"
-                    aria-label={`Tambah stok ${product.name}`}
-                  >
-                    📦
-                  </button>
-                  <button
-                    onClick={() => setModal({ type: "edit", product })}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-base text-gray-600 active:bg-gray-100"
-                    aria-label={`Edit ${product.name}`}
-                  >
-                    ✏️
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      onClick={() => setModal({ type: "stockIn", product })}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 text-base text-blue-600 active:bg-blue-50"
+                      aria-label={`Tambah stok ${product.name}`}
+                    >
+                      📦
+                    </button>
+                    <button
+                      onClick={() => setModal({ type: "edit", product })}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-base text-gray-600 active:bg-gray-100"
+                      aria-label={`Edit ${product.name}`}
+                    >
+                      ✏️
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+
+          {!hasQuery && hasMoreProducts && (
+            <div className="px-4 pb-20 pt-2">
+              {loadMoreError && (
+                <p className="mb-3 text-center text-sm text-red-600">{loadMoreError}</p>
+              )}
+              <button
+                onClick={handleLoadMoreProducts}
+                disabled={loadingMoreProducts}
+                className="min-h-11 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base font-medium text-gray-700 active:bg-gray-100 disabled:opacity-50"
+              >
+                {loadingMoreProducts ? "Memuat…" : "Muat lagi"}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {modal?.type === "create" && (

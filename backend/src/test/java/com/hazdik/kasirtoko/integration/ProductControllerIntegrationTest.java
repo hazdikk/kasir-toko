@@ -25,18 +25,45 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Autowired private SupplierRepository supplierRepository;
 
   @Test
-  void findAllProducts_existingProducts_returnsProductList() throws Exception {
+  void findAllProducts_existingProducts_returnsPagedProductList() throws Exception {
     productRepository.save(
         TestFixtures.aProduct("SKU-1001", "Kopi", "Minuman", "5000", "7000", 10));
 
-    List<Map<String, Object>> response = getApi("/products", new TypeReference<>() {});
+    Map<String, Object> response = getApi("/products", new TypeReference<>() {});
+    List<Map<String, Object>> products = productsOf(response);
 
-    assertThat(response).hasSize(1);
-    assertThat(response.getFirst().get("barcode")).isEqualTo("SKU-1001");
-    assertThat(response.getFirst().get("name")).isEqualTo("Kopi");
-    assertThat(response.getFirst().get("category")).isEqualTo("Minuman");
-    assertThat(decimalOf(response.getFirst().get("purchasePrice"))).isEqualByComparingTo("5000");
-    assertThat(decimalOf(response.getFirst().get("sellingPrice"))).isEqualByComparingTo("7000");
+    assertThat(products).hasSize(1);
+    assertThat(products.getFirst().get("barcode")).isEqualTo("SKU-1001");
+    assertThat(products.getFirst().get("name")).isEqualTo("Kopi");
+    assertThat(products.getFirst().get("category")).isEqualTo("Minuman");
+    assertThat(decimalOf(products.getFirst().get("purchasePrice"))).isEqualByComparingTo("5000");
+    assertThat(decimalOf(products.getFirst().get("sellingPrice"))).isEqualByComparingTo("7000");
+    assertThat(response.get("page")).isEqualTo(0);
+    assertThat(response.get("size")).isEqualTo(25);
+    assertThat(response.get("totalElements")).isEqualTo(1);
+    assertThat(response.get("totalPages")).isEqualTo(1);
+    assertThat(response.get("last")).isEqualTo(true);
+  }
+
+  @Test
+  void findAllProducts_withPageAndSize_returnsRequestedPage() throws Exception {
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1031", "Apel", "Buah", "5000", "8000", 10));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1032", "Beras", "Sembako", "50000", "62000", 10));
+    productRepository.save(
+        TestFixtures.aProduct("SKU-1033", "Cabai", "Sayur", "12000", "15000", 10));
+
+    Map<String, Object> response = getApi("/products?page=1&size=2", new TypeReference<>() {});
+    List<Map<String, Object>> products = productsOf(response);
+
+    assertThat(products).hasSize(1);
+    assertThat(products.getFirst().get("name")).isEqualTo("Cabai");
+    assertThat(response.get("page")).isEqualTo(1);
+    assertThat(response.get("size")).isEqualTo(2);
+    assertThat(response.get("totalElements")).isEqualTo(3);
+    assertThat(response.get("totalPages")).isEqualTo(2);
+    assertThat(response.get("last")).isEqualTo(true);
   }
 
   @Test
@@ -337,6 +364,11 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   private BigDecimal decimalOf(Object value) {
     return new BigDecimal(value.toString());
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> productsOf(Map<String, Object> response) {
+    return (List<Map<String, Object>>) response.get("content");
   }
 
   private Supplier saveSupplier() {

@@ -17,6 +17,17 @@ export interface ProductRequest {
   stock: number;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
+export type ProductPage = PageResponse<Product>;
+
 export interface StockInRequest {
   quantity: number;
   unitPurchasePrice: number;

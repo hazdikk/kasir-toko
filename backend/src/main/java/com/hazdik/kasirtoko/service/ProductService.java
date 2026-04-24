@@ -2,6 +2,7 @@ package com.hazdik.kasirtoko.service;
 
 import com.hazdik.kasirtoko.exception.ProductNotFoundException;
 import com.hazdik.kasirtoko.exception.SupplierNotFoundException;
+import com.hazdik.kasirtoko.model.dto.ProductPageResponse;
 import com.hazdik.kasirtoko.model.dto.ProductRequest;
 import com.hazdik.kasirtoko.model.dto.ProductResponse;
 import com.hazdik.kasirtoko.model.dto.StockInRequest;
@@ -20,6 +21,8 @@ import java.util.Locale;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,8 +47,15 @@ public class ProductService {
         .toList();
   }
 
-  public List<ProductResponse> findAllProducts() {
-    return productRepository.findAll().stream().map(ProductResponse::from).toList();
+  public ProductPageResponse findAllProducts(Pageable pageable) {
+    Page<Product> products = productRepository.findAll(pageable);
+    return new ProductPageResponse(
+        products.getContent().stream().map(ProductResponse::from).toList(),
+        products.getNumber(),
+        products.getSize(),
+        products.getTotalElements(),
+        products.getTotalPages(),
+        products.isLast());
   }
 
   public List<String> findAllCategories() {

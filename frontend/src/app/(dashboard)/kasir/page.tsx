@@ -7,6 +7,8 @@ import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import type { Product, PaymentMethod, TransactionResponse } from "@/types";
 
+const PRODUCT_PAGE_SIZE = 25;
+
 // ─── Cart ─────────────────────────────────────────────────────────────────────
 
 interface CartItem {
@@ -354,6 +356,10 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
 
 export default function KasirPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [nextProductPage, setNextProductPage] = useState(0);
+  const [hasMoreProducts, setHasMoreProducts] = useState(false);
+  const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -370,9 +376,15 @@ export default function KasirPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getProducts()
+    getProducts({ page: 0, size: PRODUCT_PAGE_SIZE })
       .then((data) => {
-        if (!cancelled) { setProducts(data); setFetchError(null); }
+        if (!cancelled) {
+          setProducts(data.content);
+          setNextProductPage(data.page + 1);
+          setHasMoreProducts(!data.last);
+          setFetchError(null);
+          setLoadMoreError(null);
+        }
       })
       .catch((err) => {
         if (!cancelled) setFetchError(err instanceof Error ? err.message : "Gagal memuat produk.");
@@ -422,7 +434,27 @@ export default function KasirPage() {
 
   function refetch() {
     setLoading(true);
+    setLoadingMoreProducts(false);
+    setProducts([]);
+    setNextProductPage(0);
+    setHasMoreProducts(false);
+    setLoadMoreError(null);
     setRefresh((n) => n + 1);
+  }
+
+  async function handleLoadMoreProducts() {
+    setLoadingMoreProducts(true);
+    setLoadMoreError(null);
+    try {
+      const data = await getProducts({ page: nextProductPage, size: PRODUCT_PAGE_SIZE });
+      setProducts((prev) => [...prev, ...data.content]);
+      setNextProductPage(data.page + 1);
+      setHasMoreProducts(!data.last);
+    } catch (err) {
+      setLoadMoreError(err instanceof Error ? err.message : "Gagal memuat produk.");
+    } finally {
+      setLoadingMoreProducts(false);
+    }
   }
 
   async function handleScan(code: string) {
@@ -538,40 +570,57 @@ export default function KasirPage() {
           )}
 
           {!searchError && (
-            <ul className="divide-y divide-gray-100 pb-32">
-              {visibleProducts.map((product) => {
-                const inCart = cart.find((i) => i.productId === product.id);
-                const outOfStock = product.stock === 0;
-                return (
-                  <li key={product.id}>
-                    <button
-                      onClick={() => dispatch({ type: "ADD", product })}
-                      disabled={outOfStock}
-                      className="flex w-full items-center gap-3 bg-white px-4 py-4 text-left active:bg-blue-50 disabled:opacity-40"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-base font-medium text-gray-900">
-                          {product.name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {formatRupiah(product.sellingPrice)}
-                          {outOfStock ? (
-                            <span className="ml-2 text-red-400">Habis</span>
-                          ) : (
-                            <span className="text-gray-400"> · Stok: {product.stock}</span>
-                          )}
-                        </p>
-                      </div>
-                      {inCart && (
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-                          {inCart.quantity}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <>
+              <ul className="divide-y divide-gray-100 pb-4">
+                {visibleProducts.map((product) => {
+                  const inCart = cart.find((i) => i.productId === product.id);
+                  const outOfStock = product.stock === 0;
+                  return (
+                    <li key={product.id}>
+                      <button
+                        onClick={() => dispatch({ type: "ADD", product })}
+                        disabled={outOfStock}
+                        className="flex w-full items-center gap-3 bg-white px-4 py-4 text-left active:bg-blue-50 disabled:opacity-40"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-base font-medium text-gray-900">
+                            {product.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatRupiah(product.sellingPrice)}
+                            {outOfStock ? (
+                              <span className="ml-2 text-red-400">Habis</span>
+                            ) : (
+                              <span className="text-gray-400"> · Stok: {product.stock}</span>
+                            )}
+                          </p>
+                        </div>
+                        {inCart && (
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                            {inCart.quantity}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {!hasQuery && hasMoreProducts && (
+                <div className="px-4 pb-32 pt-2">
+                  {loadMoreError && (
+                    <p className="mb-3 text-center text-sm text-red-600">{loadMoreError}</p>
+                  )}
+                  <button
+                    onClick={handleLoadMoreProducts}
+                    disabled={loadingMoreProducts}
+                    className="min-h-11 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base font-medium text-gray-700 active:bg-gray-100 disabled:opacity-50"
+                  >
+                    {loadingMoreProducts ? "Memuat…" : "Muat lagi"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           {!searchLoading && !searchError && visibleProducts.length === 0 && (
