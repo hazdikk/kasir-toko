@@ -8,11 +8,27 @@ interface BarcodeScannerProps {
   onClose: () => void;
 }
 
+interface ScannerControls {
+  stop: () => void;
+}
+
+interface TorchMediaTrackCapabilities extends MediaTrackCapabilities {
+  torch?: boolean;
+}
+
+interface TorchMediaTrackConstraintSet extends MediaTrackConstraintSet {
+  torch?: boolean;
+}
+
 export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const onScanRef = useRef(onScan);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [canUseTorch, setCanUseTorch] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchError, setTorchError] = useState<string | null>(null);
 
   useEffect(() => {
     onScanRef.current = onScan;
@@ -21,7 +37,33 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   useEffect(() => {
     const reader = new BrowserMultiFormatReader();
     let stopped = false;
-    let controls: { stop: () => void } | null = null;
+    let controls: ScannerControls | null = null;
+
+    function getVideoTrack() {
+      const stream = videoRef.current?.srcObject;
+      if (!(stream instanceof MediaStream)) return null;
+      return stream.getVideoTracks()[0] ?? null;
+    }
+
+    function updateTorchSupport() {
+      const videoTrack = getVideoTrack();
+      videoTrackRef.current = videoTrack;
+
+      const capabilities = videoTrack?.getCapabilities() as
+        | TorchMediaTrackCapabilities
+        | undefined;
+
+      setCanUseTorch(Boolean(capabilities?.torch));
+    }
+
+    function handleResult(text: string) {
+      const code = text.trim();
+      if (!code) return;
+
+      stopped = true;
+      controls?.stop();
+      onScanRef.current(code);
+    }
 
     async function start() {
       if (!videoRef.current) return;
@@ -31,13 +73,14 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
           videoRef.current,
           (result) => {
             if (result && !stopped) {
-              stopped = true;
-              controls?.stop();
-              onScanRef.current(result.getText());
+              handleResult(result.getText());
             }
           },
         );
-        if (!stopped) setReady(true);
+        if (!stopped) {
+          updateTorchSupport();
+          setReady(true);
+        }
       } catch (err) {
         if (!stopped) {
           setError(
@@ -51,9 +94,29 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
     return () => {
       stopped = true;
+      videoTrackRef.current = null;
       controls?.stop();
     };
   }, []);
+
+  async function handleToggleTorch() {
+    const videoTrack = videoTrackRef.current;
+    if (!videoTrack || !canUseTorch) return;
+
+    const nextTorchOn = !torchOn;
+    setTorchError(null);
+
+    try {
+      await videoTrack.applyConstraints({
+        advanced: [{ torch: nextTorchOn } as TorchMediaTrackConstraintSet],
+      });
+      setTorchOn(nextTorchOn);
+    } catch {
+      setTorchError("Senter tidak dapat dinyalakan di perangkat ini.");
+      setCanUseTorch(false);
+      setTorchOn(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-black">
@@ -61,10 +124,22 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         <button
           onClick={onClose}
           className="flex h-11 w-11 items-center justify-center rounded-xl text-2xl text-white active:bg-white/10"
+          aria-label="Tutup scanner"
         >
           ←
         </button>
-        <h2 className="text-base font-semibold text-white">Scan Barcode</h2>
+        <h2 className="flex-1 text-base font-semibold text-white">Scan Barcode</h2>
+        {canUseTorch && (
+          <button
+            onClick={handleToggleTorch}
+            className={`min-h-11 rounded-xl px-4 text-sm font-semibold text-white active:bg-white/20 ${
+              torchOn ? "bg-white/25" : "bg-white/10"
+            }`}
+            aria-pressed={torchOn}
+          >
+            {torchOn ? "Senter On" : "Senter"}
+          </button>
+        )}
       </div>
 
       <div className="relative flex-1">
@@ -110,6 +185,9 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
       {ready && !error && (
         <div className="px-4 py-6 text-center">
           <p className="text-sm text-white/70">Arahkan kamera ke barcode produk</p>
+          {torchError && (
+            <p className="mt-2 text-sm text-white/60">{torchError}</p>
+          )}
         </div>
       )}
     </div>
