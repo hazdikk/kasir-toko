@@ -2,11 +2,14 @@ package com.hazdik.kasirtoko.model.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.Getter;
 
 @MappedSuperclass
 @Getter
 public abstract class BaseEntity {
+
+  private static final ZoneId STORE_ZONE = ZoneId.of("Asia/Jakarta");
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
@@ -20,12 +23,13 @@ public abstract class BaseEntity {
 
   @PrePersist
   private void onCreate() {
-    createdAt = LocalDateTime.now();
-    updatedAt = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now(STORE_ZONE);
+    createdAt = now;
+    updatedAt = now;
   }
 
   @PreUpdate
   private void onUpdate() {
-    updatedAt = LocalDateTime.now();
+    updatedAt = LocalDateTime.now(STORE_ZONE);
   }
 }
