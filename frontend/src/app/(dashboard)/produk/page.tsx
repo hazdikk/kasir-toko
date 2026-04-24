@@ -43,10 +43,11 @@ interface ProductFormProps {
   categories: string[];
   categoriesError: string | null;
   onSave: (data: ProductRequest) => Promise<void>;
+  onDelete?: () => void;
   onCancel: () => void;
 }
 
-function ProductForm({ initial, categories, categoriesError, onSave, onCancel }: ProductFormProps) {
+function ProductForm({ initial, categories, categoriesError, onSave, onDelete, onCancel }: ProductFormProps) {
   const [barcode, setBarcode] = useState(initial?.barcode ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] = useState(initial?.category ?? "");
@@ -106,9 +107,21 @@ function ProductForm({ initial, categories, categoriesError, onSave, onCancel }:
         className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-t-2xl bg-white p-6 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-5 text-lg font-semibold text-gray-900">
-          {initial ? "Edit Produk" : "Tambah Produk"}
-        </h2>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {initial ? "Edit Produk" : "Tambah Produk"}
+          </h2>
+          {initial && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-base text-red-600 active:bg-red-100"
+              aria-label={`Hapus ${initial.name}`}
+            >
+              🗑️
+            </button>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -847,38 +860,33 @@ export default function ProdukPage() {
           {visibleProducts.map((product) => (
             <li
               key={product.id}
-              className="flex flex-col gap-3 bg-white px-4 py-4"
+              className="flex flex-col gap-2 bg-white px-4 py-4"
             >
-              <div className="min-w-0">
-                <p className="text-base font-medium text-gray-900">{product.name}</p>
-                <p className="text-sm text-gray-500">
+              <p className="text-base font-medium text-gray-900">{product.name}</p>
+
+              <div className="flex items-start gap-3">
+                <p className="min-w-0 flex-1 text-sm text-gray-500">
                   Kategori: {product.category} ·{" "}
                   Beli: {formatRupiah(product.purchasePrice)} · Jual: {formatRupiah(product.sellingPrice)} · Stok: {product.stock}
                   {product.barcode && <span className="text-gray-400"> · {product.barcode}</span>}
                 </p>
-              </div>
 
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  onClick={() => setModal({ type: "stockIn", product })}
-                  className="min-h-11 rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 active:bg-gray-100"
-                >
-                  Tambah Stok
-                </button>
-                <button
-                  onClick={() => setModal({ type: "edit", product })}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-base text-gray-600 active:bg-gray-100"
-                  aria-label={`Edit ${product.name}`}
-                >
-                  ✏️
-                </button>
-                <button
-                  onClick={() => setModal({ type: "delete", product })}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-100 text-base text-red-500 active:bg-red-50"
-                  aria-label={`Hapus ${product.name}`}
-                >
-                  🗑️
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => setModal({ type: "stockIn", product })}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 text-base text-blue-600 active:bg-blue-50"
+                    aria-label={`Tambah stok ${product.name}`}
+                  >
+                    📦
+                  </button>
+                  <button
+                    onClick={() => setModal({ type: "edit", product })}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-base text-gray-600 active:bg-gray-100"
+                    aria-label={`Edit ${product.name}`}
+                  >
+                    ✏️
+                  </button>
+                </div>
               </div>
             </li>
           ))}
@@ -900,6 +908,7 @@ export default function ProdukPage() {
           categories={productCategories}
           categoriesError={categoryError}
           onSave={(data) => handleEdit(modal.product, data)}
+          onDelete={() => setModal({ type: "delete", product: modal.product })}
           onCancel={() => setModal(null)}
         />
       )}
