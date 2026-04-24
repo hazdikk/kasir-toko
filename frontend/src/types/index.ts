@@ -67,3 +67,7 @@ export interface TransactionResponse {
   changeAmount: number;
   items: TransactionItemResponse[];
 }
+
+export interface AuthUser {
+  username: string;
+}

@@ -23,7 +23,7 @@ The workflow:
   ```
 - Reverse proxy configured to route:
   - `/` to frontend container port `3010` (host) / `3000` (container)
-  - `/api/*` to backend container port `8080` (internal only, no public backend port)
+  - `/api/*` to backend container port `8080` on `proxy_net` only
 
 ### Required env file
 
@@ -35,7 +35,17 @@ Required keys:
 - `SPRING_DATASOURCE_PASSWORD`
 - `APP_CORS_ALLOWED_ORIGINS`
 - `NEXT_PUBLIC_API_BASE_URL`
+- `APP_SECURITY_USERNAME`
+- `APP_SECURITY_PASSWORD_HASH`
 
 Optional keys:
+- `APP_SECURITY_PASSWORD` for local development only when no hash is set
+- `APP_SESSION_COOKIE_SECURE`
 - `SPRING_JPA_HIBERNATE_DDL_AUTO`
 - `SPRING_JPA_SHOW_SQL`
+
+Security notes:
+- Set `APP_CORS_ALLOWED_ORIGINS` to the exact HTTPS site origin, for example `https://kasir.example.com`.
+- Keep `APP_SESSION_COOKIE_SECURE=true` in production.
+- Generate `APP_SECURITY_PASSWORD_HASH` with BCrypt and leave `APP_SECURITY_PASSWORD` empty in production.
+- The backend service is intentionally not published with a host port in Docker Compose; expose it only through the reverse proxy.

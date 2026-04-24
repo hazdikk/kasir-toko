@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import BottomNav from "@/components/BottomNav";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,8 +21,7 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-gray-50 font-sans">
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))]">{children}</main>
-        <BottomNav />
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

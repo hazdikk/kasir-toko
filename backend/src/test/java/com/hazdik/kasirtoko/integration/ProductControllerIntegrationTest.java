@@ -86,7 +86,9 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
 
   @Test
   void searchProducts_missingQueryParam_returnsBadRequest() throws Exception {
-    mockMvc.perform(get("/products/search")).andExpect(status().isBadRequest());
+    mockMvc
+        .perform(get("/products/search").session(authenticatedSession))
+        .andExpect(status().isBadRequest());
   }
 
   @Test

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 
 const mainItems = [
   { href: "/kasir", label: "Kasir", icon: "🛒" },
@@ -20,8 +21,15 @@ function navItemClass(isActive: boolean) {
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
   const [showMore, setShowMore] = useState(false);
   const supplierActive = pathname.startsWith(supplierItem.href);
+
+  async function handleLogout() {
+    await logout();
+    router.replace("/login");
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white">
@@ -37,6 +45,14 @@ export default function BottomNav() {
             <span className="text-lg">{supplierItem.icon}</span>
             {supplierItem.label}
           </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex min-h-11 w-full items-center gap-3 px-4 text-left text-sm font-medium text-gray-700 active:bg-gray-100"
+          >
+            <span className="text-lg">↪</span>
+            Keluar
+          </button>
         </div>
       )}
 
@@ -60,6 +76,16 @@ export default function BottomNav() {
           <span className="text-xl">{supplierItem.icon}</span>
           {supplierItem.label}
         </Link>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={`${navItemClass(false)} hidden min-[360px]:flex`}
+          aria-label="Keluar"
+        >
+          <span className="text-xl">↪</span>
+          Keluar
+        </button>
 
         <button
           type="button"
