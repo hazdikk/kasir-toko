@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 
 interface BarcodeScannerProps {
   onScan: (code: string) => void;
@@ -9,7 +8,6 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const onScanRef = useRef(onScan);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -19,23 +17,28 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
   });
 
   useEffect(() => {
-    const reader = new BrowserMultiFormatReader();
     let stopped = false;
-    let controls: { stop: () => void } | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let scanner: any = null;
 
     async function start() {
-      if (!videoRef.current) return;
+      const { Html5Qrcode } = await import("html5-qrcode");
+      if (stopped) return;
+
+      scanner = new Html5Qrcode("barcode-scanner-container");
+
       try {
-        controls = await reader.decodeFromConstraints(
-          { video: { facingMode: "environment" } },
-          videoRef.current,
-          (result) => {
-            if (result && !stopped) {
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 15, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            if (!stopped) {
               stopped = true;
-              controls?.stop();
-              onScanRef.current(result.getText());
+              scanner?.stop().catch(() => {});
+              onScanRef.current(decodedText);
             }
           },
+          () => {},
         );
         if (!stopped) setReady(true);
       } catch (err) {
@@ -51,7 +54,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
 
     return () => {
       stopped = true;
-      controls?.stop();
+      scanner?.stop().catch(() => {});
     };
   }, []);
 
@@ -67,26 +70,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         <h2 className="text-base font-semibold text-white">Scan Barcode</h2>
       </div>
 
-      <div className="relative flex-1">
-        <video
-          ref={videoRef}
-          className="h-full w-full object-cover"
-          autoPlay
-          muted
-          playsInline
-        />
-
-        {/* Scan frame */}
-        {ready && !error && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="relative h-40 w-72">
-              <span className="absolute left-0 top-0 h-8 w-8 rounded-tl-sm border-l-4 border-t-4 border-white" />
-              <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-sm border-r-4 border-t-4 border-white" />
-              <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-sm border-b-4 border-l-4 border-white" />
-              <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-sm border-b-4 border-r-4 border-white" />
-            </div>
-          </div>
-        )}
+      <div className="relative flex-1 overflow-hidden">
+        <div id="barcode-scanner-container" className="h-full w-full" />
 
         {!ready && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
