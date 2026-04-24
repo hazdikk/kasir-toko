@@ -13,9 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Product extends BaseEntity {
 
-  @Column(unique = true)
   private String barcode;
-
   private String name;
   private String category;
   private BigDecimal purchasePrice;
