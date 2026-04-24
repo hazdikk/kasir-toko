@@ -51,9 +51,7 @@ function ProductForm({ initial, categories, categoriesError, onSave, onDelete, o
   const [barcode, setBarcode] = useState(initial?.barcode ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [category, setCategory] = useState(initial?.category ?? "");
-  const [purchasePrice, setPurchasePrice] = useState(initial?.purchasePrice.toString() ?? "");
   const [sellingPrice, setSellingPrice] = useState(initial?.sellingPrice.toString() ?? "");
-  const [stock, setStock] = useState(initial?.stock.toString() ?? "");
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,19 +65,13 @@ function ProductForm({ initial, categories, categoriesError, onSave, onDelete, o
     e.preventDefault();
     setError(null);
 
-    const parsedPurchasePrice = Number(purchasePrice);
     const parsedSellingPrice = Number(sellingPrice);
-    const parsedStock = Number(stock);
 
     if (!name.trim()) return setError("Nama produk wajib diisi.");
     if (!category.trim()) return setError("Kategori wajib diisi.");
-    if (isNaN(parsedPurchasePrice) || parsedPurchasePrice <= 0) {
-      return setError("Harga beli harus lebih dari 0.");
-    }
     if (isNaN(parsedSellingPrice) || parsedSellingPrice <= 0) {
       return setError("Harga jual harus lebih dari 0.");
     }
-    if (isNaN(parsedStock) || parsedStock < 0) return setError("Stok tidak boleh negatif.");
 
     setSaving(true);
     try {
@@ -87,9 +79,7 @@ function ProductForm({ initial, categories, categoriesError, onSave, onDelete, o
         barcode: barcode.trim() || undefined,
         name: name.trim(),
         category: category.trim(),
-        purchasePrice: parsedPurchasePrice,
         sellingPrice: parsedSellingPrice,
-        stock: parsedStock,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan produk.");
@@ -214,19 +204,6 @@ function ProductForm({ initial, categories, categoriesError, onSave, onDelete, o
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">Harga Beli (Rp)</label>
-            <input
-              type="number"
-              value={purchasePrice}
-              onChange={(e) => setPurchasePrice(e.target.value)}
-              placeholder="Contoh: 3500"
-              inputMode="numeric"
-              min="1"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">Harga Jual (Rp)</label>
             <input
               type="number"
@@ -235,19 +212,6 @@ function ProductForm({ initial, categories, categoriesError, onSave, onDelete, o
               placeholder="Contoh: 5000"
               inputMode="numeric"
               min="1"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">Stok</label>
-            <input
-              type="number"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              placeholder="Contoh: 50"
-              inputMode="numeric"
-              min="0"
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>

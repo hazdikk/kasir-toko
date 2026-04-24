@@ -75,9 +75,9 @@ public class ProductService {
     product.setBarcode(request.barcode());
     product.setName(request.name());
     product.setCategory(normalizeCategory(request.category()));
-    product.setPurchasePrice(request.purchasePrice());
+    product.setPurchasePrice(BigDecimal.ZERO);
     product.setSellingPrice(request.sellingPrice());
-    product.setStock(request.stock());
+    product.setStock(0);
     return ProductResponse.from(productRepository.save(product));
   }
 
@@ -88,9 +88,7 @@ public class ProductService {
     product.setBarcode(request.barcode());
     product.setName(request.name());
     product.setCategory(normalizeCategory(request.category()));
-    product.setPurchasePrice(request.purchasePrice());
     product.setSellingPrice(request.sellingPrice());
-    product.setStock(request.stock());
     return ProductResponse.from(productRepository.save(product));
   }
 

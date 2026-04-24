@@ -12,9 +12,7 @@ export interface ProductRequest {
   barcode?: string;
   name: string;
   category: string;
-  purchasePrice: number;
   sellingPrice: number;
-  stock: number;
 }
 
 export interface PageResponse<T> {

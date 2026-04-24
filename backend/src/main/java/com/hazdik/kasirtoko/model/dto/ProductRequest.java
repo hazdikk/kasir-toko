@@ -1,6 +1,5 @@
 package com.hazdik.kasirtoko.model.dto;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -10,6 +9,4 @@ public record ProductRequest(
     String barcode,
     @NotBlank String name,
     @NotBlank String category,
-    @NotNull @Positive BigDecimal purchasePrice,
-    @NotNull @Positive BigDecimal sellingPrice,
-    @Min(0) int stock) {}
+    @NotNull @Positive BigDecimal sellingPrice) {}

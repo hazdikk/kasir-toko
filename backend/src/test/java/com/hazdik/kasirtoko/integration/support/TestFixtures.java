@@ -28,19 +28,12 @@ public final class TestFixtures {
   }
 
   public static Map<String, Object> aProductRequest(
-      String barcode,
-      String name,
-      String category,
-      String purchasePrice,
-      String sellingPrice,
-      int stock) {
+      String barcode, String name, String category, String sellingPrice) {
     return Map.of(
         "barcode", barcode,
         "name", name,
         "category", category,
-        "purchasePrice", new BigDecimal(purchasePrice),
-        "sellingPrice", new BigDecimal(sellingPrice),
-        "stock", stock);
+        "sellingPrice", new BigDecimal(sellingPrice));
   }
 
   public static Map<String, Object> aTransactionRequest(

@@ -121,7 +121,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
   @Test
   void createProduct_validRequest_returnsCreatedProduct() throws Exception {
     Map<String, Object> request =
-        TestFixtures.aProductRequest("SKU-1005", "Biskuit", "Snack", "3500", "5500", 15);
+        TestFixtures.aProductRequest("SKU-1005", "Biskuit", "Snack", "5500");
 
     Map<String, Object> response = postApi("/products", request, 201, new TypeReference<>() {});
 
@@ -129,9 +129,9 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     assertThat(response.get("barcode")).isEqualTo("SKU-1005");
     assertThat(response.get("name")).isEqualTo("Biskuit");
     assertThat(response.get("category")).isEqualTo("SNACK");
-    assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("3500");
+    assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("0");
     assertThat(decimalOf(response.get("sellingPrice"))).isEqualByComparingTo("5500");
-    assertThat(response.get("stock")).isEqualTo(15);
+    assertThat(response.get("stock")).isEqualTo(0);
   }
 
   @Test
@@ -142,7 +142,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Map<String, Object> response =
         postApi(
             "/products",
-            TestFixtures.aProductRequest("SKU-1018", "Jus Jeruk", "mINUMAN", "6000", "9000", 8),
+            TestFixtures.aProductRequest("SKU-1018", "Jus Jeruk", "mINUMAN", "9000"),
             201,
             new TypeReference<>() {});
 
@@ -155,7 +155,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
         productRepository.save(
             TestFixtures.aProduct("SKU-1006", "Permen", "Permen", "1000", "2000", 20));
     Map<String, Object> request =
-        TestFixtures.aProductRequest("SKU-1006", "Permen Mint", "Candy", "1200", "2500", 18);
+        TestFixtures.aProductRequest("SKU-1006", "Permen Mint", "Candy", "2500");
 
     Map<String, Object> response =
         putApi("/products/" + product.getId(), request, new TypeReference<>() {});
@@ -163,9 +163,9 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     assertThat(response.get("id")).isEqualTo(product.getId());
     assertThat(response.get("name")).isEqualTo("Permen Mint");
     assertThat(response.get("category")).isEqualTo("CANDY");
-    assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("1200");
+    assertThat(decimalOf(response.get("purchasePrice"))).isEqualByComparingTo("1000");
     assertThat(decimalOf(response.get("sellingPrice"))).isEqualByComparingTo("2500");
-    assertThat(response.get("stock")).isEqualTo(18);
+    assertThat(response.get("stock")).isEqualTo(20);
   }
 
   @Test
@@ -179,7 +179,7 @@ class ProductControllerIntegrationTest extends BaseIntegrationTest {
     Map<String, Object> response =
         putApi(
             "/products/" + product.getId(),
-            TestFixtures.aProductRequest("SKU-1020", "Roti Cokelat", "sNack", "4200", "6800", 7),
+            TestFixtures.aProductRequest("SKU-1020", "Roti Cokelat", "sNack", "6800"),
             new TypeReference<>() {});
 
     assertThat(response.get("category")).isEqualTo("SNACK");
