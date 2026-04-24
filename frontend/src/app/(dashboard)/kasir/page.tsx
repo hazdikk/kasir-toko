@@ -3,6 +3,7 @@
 import { useState, useEffect, useReducer } from "react";
 import { getProducts, searchProducts } from "@/services/products";
 import { createTransaction } from "@/services/transactions";
+import { STORE_NAME } from "@/lib/branding";
 import { formatRupiah } from "@/lib/format";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import type { Product, PaymentMethod, TransactionResponse } from "@/types";
@@ -247,66 +248,68 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6">
-        <div className="mb-4 text-center">
-          <div className="mb-2 text-4xl">✅</div>
-          <h2 className="text-lg font-bold text-gray-900">Transaksi Berhasil</h2>
-          <p className="text-sm text-gray-500">{createdAt}</p>
-        </div>
+    <>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
+        <div className="w-full max-w-sm rounded-2xl bg-white p-6">
+          <div className="mb-4 text-center">
+            <div className="mb-2 text-4xl">✅</div>
+            <h2 className="text-lg font-bold text-gray-900">Transaksi Berhasil</h2>
+            <p className="text-sm text-gray-500">{createdAt}</p>
+          </div>
 
-        <ul className="mb-4 divide-y divide-gray-100 text-sm">
-          {transaction.items.map((item) => (
-            <li key={item.productId} className="flex justify-between py-2">
-              <span className="text-gray-700">
-                {item.productName} ×{item.quantity}
-              </span>
-              <span className="font-medium">{formatRupiah(item.subtotal)}</span>
-            </li>
-          ))}
-        </ul>
+          <ul className="mb-4 divide-y divide-gray-100 text-sm">
+            {transaction.items.map((item) => (
+              <li key={item.productId} className="flex justify-between py-2">
+                <span className="text-gray-700">
+                  {item.productName} ×{item.quantity}
+                </span>
+                <span className="font-medium">{formatRupiah(item.subtotal)}</span>
+              </li>
+            ))}
+          </ul>
 
-        <div className="mb-1 flex justify-between text-base font-semibold">
-          <span>Total</span>
-          <span>{formatRupiah(transaction.totalAmount)}</span>
-        </div>
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>Metode</span>
-          <span>{paymentMethodLabel}</span>
-        </div>
+          <div className="mb-1 flex justify-between text-base font-semibold">
+            <span>Total</span>
+            <span>{formatRupiah(transaction.totalAmount)}</span>
+          </div>
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>Metode</span>
+            <span>{paymentMethodLabel}</span>
+          </div>
 
-        {transaction.paymentMethod === "CASH" && (
-          <>
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Bayar</span>
-              <span>{formatRupiah(transaction.amountPaid)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Kembalian</span>
-              <span>{formatRupiah(transaction.changeAmount)}</span>
-            </div>
-          </>
-        )}
+          {transaction.paymentMethod === "CASH" && (
+            <>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Bayar</span>
+                <span>{formatRupiah(transaction.amountPaid)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Kembalian</span>
+                <span>{formatRupiah(transaction.changeAmount)}</span>
+              </div>
+            </>
+          )}
 
-        <div className="mt-5 space-y-3">
-          <button
-            onClick={handlePrint}
-            className="w-full rounded-xl border border-gray-300 bg-white py-3 text-base font-semibold text-gray-800 active:bg-gray-100"
-          >
-            Print 58mm
-          </button>
-          <button
-            onClick={onClose}
-            className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white active:bg-blue-700"
-          >
-            Transaksi Baru
-          </button>
+          <div className="mt-5 space-y-3">
+            <button
+              onClick={handlePrint}
+              className="w-full rounded-xl border border-gray-300 bg-white py-3 text-base font-semibold text-gray-800 active:bg-gray-100"
+            >
+              Print 58mm
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white active:bg-blue-700"
+            >
+              Transaksi Baru
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="print-receipt" aria-hidden="true">
         <div className="print-receipt__header">
-          <h1>Kasir Toko</h1>
+          <h1>{STORE_NAME}</h1>
           <p>Struk Transaksi</p>
           <p>{createdAt}</p>
         </div>
@@ -348,7 +351,7 @@ function Receipt({ transaction, onClose }: ReceiptProps) {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -503,7 +506,7 @@ export default function KasirPage() {
   const visibleProducts = hasQuery ? searchResults : products;
 
   return (
-    <div className="flex flex-col">
+    <div className="kasir-page flex flex-col">
       <div className="space-y-3 border-b border-gray-200 bg-white px-4 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-900">Kasir</h1>

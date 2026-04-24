@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
+import { STORE_NAME } from "@/lib/branding";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -9,7 +10,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Kasir Toko",
+  title: STORE_NAME,
   description: "Aplikasi kasir untuk toko",
 };
 

@@ -43,20 +43,19 @@ body {
     color: #000 !important;
   }
 
-  body * {
-    visibility: hidden;
+  main,
+  .kasir-page {
+    display: block !important;
+    padding: 0 !important;
   }
 
-  .print-receipt,
-  .print-receipt * {
-    visibility: visible;
+  nav,
+  .kasir-page > :not(.print-receipt) {
+    display: none !important;
   }
 
   .print-receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 9999;
+    position: static;
     display: block;
     width: 58mm;
     box-sizing: border-box;
@@ -93,6 +92,7 @@ body {
 
   .print-receipt__item {
     margin-bottom: 5px;
+    break-inside: avoid;
   }
 
   .print-receipt__item:last-child {

@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiException } from "@/services/api";
 import { useAuth } from "@/components/AuthProvider";
+import { STORE_NAME } from "@/lib/branding";
 
 function getSafeNextPath(nextPath: string | null) {
   if (!nextPath?.startsWith("/") || nextPath.startsWith("//")) return "/kasir";
@@ -49,7 +50,7 @@ function LoginForm() {
     <main className="flex min-h-dvh items-center bg-gray-50 px-4 py-8">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Kasir Toko</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">{STORE_NAME}</p>
           <h1 className="mt-2 text-3xl font-bold text-gray-950">Masuk sebagai owner</h1>
           <p className="mt-2 text-base text-gray-600">Akses kasir, produk, supplier, dan laporan.</p>
         </div>
