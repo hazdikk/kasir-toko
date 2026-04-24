@@ -600,6 +600,51 @@ type Modal =
 type BannerTone = "success" | "error" | "info";
 const PRODUCT_PAGE_SIZE = 25;
 
+function compareProductNames(left: Product, right: Product) {
+  return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+}
+
+function insertSortedByName(
+  products: Product[],
+  product: Product,
+  hasMoreProductsAfterLoadedRange: boolean,
+) {
+  const productsWithoutDuplicate = products.filter((item) => item.id !== product.id);
+  const lastLoadedProduct = productsWithoutDuplicate.at(-1);
+
+  if (
+    hasMoreProductsAfterLoadedRange &&
+    lastLoadedProduct &&
+    compareProductNames(product, lastLoadedProduct) > 0
+  ) {
+    return productsWithoutDuplicate;
+  }
+
+  const insertIndex = productsWithoutDuplicate.findIndex(
+    (item) => compareProductNames(product, item) <= 0,
+  );
+
+  if (insertIndex === -1) {
+    return [...productsWithoutDuplicate, product];
+  }
+
+  return [
+    ...productsWithoutDuplicate.slice(0, insertIndex),
+    product,
+    ...productsWithoutDuplicate.slice(insertIndex),
+  ];
+}
+
+function productMatchesQuery(product: Product, query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return false;
+
+  return (
+    product.name.toLowerCase().includes(normalizedQuery) ||
+    product.barcode?.toLowerCase().includes(normalizedQuery) === true
+  );
+}
+
 export default function ProdukPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [nextProductPage, setNextProductPage] = useState(0);
@@ -749,26 +794,72 @@ export default function ProdukPage() {
       prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
     );
     setSearchResults((prev) =>
-      prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item)),
+      productMatchesQuery(updatedProduct, query)
+        ? prev.map((item) => (item.id === updatedProduct.id ? updatedProduct : item))
+        : prev.filter((item) => item.id !== updatedProduct.id),
     );
   }
 
+  function insertProductInLoadedRange(createdProduct: Product) {
+    setProducts((prev) => insertSortedByName(prev, createdProduct, hasMoreProducts));
+    setSearchResults((prev) =>
+      productMatchesQuery(createdProduct, query)
+        ? insertSortedByName(prev, createdProduct, false)
+        : prev,
+    );
+  }
+
+  function removeProduct(productId: string) {
+    setProducts((prev) => prev.filter((item) => item.id !== productId));
+    setSearchResults((prev) => prev.filter((item) => item.id !== productId));
+  }
+
+  function shouldRefreshCategories(previousCategory: string | undefined, nextCategory: string) {
+    const normalizedNextCategory = nextCategory.trim().toUpperCase();
+    const normalizedPreviousCategory = previousCategory?.trim().toUpperCase();
+    const categoryExists = productCategories.some(
+      (category) => category.trim().toUpperCase() === normalizedNextCategory,
+    );
+
+    if (normalizedPreviousCategory === undefined) {
+      return !categoryExists;
+    }
+
+    return normalizedNextCategory !== normalizedPreviousCategory;
+  }
+
+  async function refreshProductCategories() {
+    try {
+      const categories = await getProductCategories();
+      setProductCategories(categories);
+      setCategoryError(null);
+    } catch (err) {
+      setCategoryError(err instanceof Error ? err.message : "Gagal memuat daftar kategori.");
+    }
+  }
+
   async function handleCreate(data: ProductRequest) {
-    await createProduct(data);
+    const createdProduct = await createProduct(data);
+    insertProductInLoadedRange(createdProduct);
     setModal(null);
-    refetch();
+    if (shouldRefreshCategories(undefined, createdProduct.category)) {
+      await refreshProductCategories();
+    }
   }
 
   async function handleEdit(product: Product, data: ProductRequest) {
-    await updateProduct(product.id, data);
+    const updatedProduct = await updateProduct(product.id, data);
+    mergeUpdatedProduct(updatedProduct);
     setModal(null);
-    refetch();
+    if (shouldRefreshCategories(product.category, updatedProduct.category)) {
+      await refreshProductCategories();
+    }
   }
 
   async function handleDelete(product: Product) {
     await deleteProduct(product.id);
+    removeProduct(product.id);
     setModal(null);
-    refetch();
   }
 
   async function handleScan(code: string) {
@@ -792,7 +883,6 @@ export default function ProdukPage() {
       mergeUpdatedProduct(updatedProduct);
       setModal(null);
       showScanFeedback("success", `Stok ${updatedProduct.name} berhasil ditambahkan.`);
-      refetch();
     } catch (err) {
       if (err instanceof ApiException && err.status === 404) {
         throw new Error(err.message.includes("Supplier") ? "Supplier tidak ditemukan." : "Produk tidak ditemukan.");
