@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { STORE_NAME } from "@/lib/branding";
@@ -12,6 +12,11 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: STORE_NAME,
   description: "Aplikasi kasir untuk toko",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
